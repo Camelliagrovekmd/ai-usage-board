@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="AI 사용량">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>AI 사용량</title>
+<style>
+  :root{--bg:#0f1115;--card:#171a21;--line:#262b36;--tx:#e8eaf0;--mut:#8b93a7;--ok:#3ecf8e;--warn:#f5b041;--bad:#ef5350;--acc:#7aa2ff}
+  @media (prefers-color-scheme: light){:root{--bg:#f4f5f8;--card:#fff;--line:#e3e6ec;--tx:#1b1f29;--mut:#6b7385}}
+  *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--tx)}
+  body{font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:15px;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  header{display:flex;align-items:center;gap:8px;padding:14px 16px 4px}
+  header h1{font-size:18px;margin:0}
+  header .meta{margin-left:auto;color:var(--mut);font-size:12px;text-align:right}
+  button,input{font:inherit}
+  .btn{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:13px}
+  .advice{margin:8px 16px;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:14px}
+  .stale{margin:0 16px 8px;padding:10px 12px;border-radius:12px;border:1px solid var(--warn);color:var(--warn);font-size:13px;display:none}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:4px 16px 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .card h2{font-size:16px;margin:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--line);color:var(--mut)}
+  .sub{color:var(--mut);font-size:12px;margin:3px 0 8px}
+  .row{margin:12px 0}
+  .lab{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin-bottom:5px}
+  .lab b{color:var(--tx);font-size:14px}
+  .bar{height:12px;border-radius:99px;background:var(--line);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;font-size:13px;color:var(--mut)}
+  .kv b{color:var(--tx);text-align:right}
+  .models{margin-top:10px;font-size:12px;color:var(--mut)} .models div{display:flex;justify-content:space-between}
+  svg.spark{width:100%;height:40px;margin-top:6px}
+  footer{color:var(--mut);font-size:11px;padding:0 16px 24px;line-height:1.6}
+  #lock{max-width:360px;margin:18vh auto 0;padding:24px;text-align:center}
+  #lock h1{font-size:20px} #lock p{color:var(--mut);font-size:13px}
+  #lock input{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx);margin:12px 0;font-size:16px}
+  #lock .btn{width:100%;padding:12px;background:var(--acc);border:0;color:#fff;font-weight:700}
+  #lock .err{color:var(--bad);font-size:13px;min-height:18px}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<div id="lock">
+  <h1>AI 사용량</h1>
+  <p>비밀번호를 입력하세요. 이 기기에 한 번만 저장됩니다.</p>
+  <input id="pw" type="password" autocomplete="current-password" placeholder="비밀번호">
+  <button class="btn" id="go">열기</button>
+  <div class="err" id="err"></div>
+</div>
+<div id="app" class="hide">
+  <header>
+    <h1>AI 사용량</h1>
+    <button class="btn" id="reload">새로고침</button>
+    <div class="meta" id="meta"></div>
+  </header>
+  <div class="stale" id="stale"></div>
+  <div class="advice" id="advice"></div>
+  <div class="grid" id="grid"></div>
+  <footer>
+    PC의 Aside가 매시간(08~22시) 갱신합니다. 실시간 값이 필요하면 텔레그램 봇에 "사용량"이라고 보내세요.<br>
+    초록 &lt;50% · 노랑 &lt;80% · 빨강 ≥80% · 그래프 실선 5시간, 점선 주간.
+    <br><a href="#" id="logout" style="color:var(--mut)">이 기기에서 비밀번호 지우기</a>
+  </footer>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const KEY = 'aiusage.pw';
+const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function decrypt(env, pw) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveKey']);
+  const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64(env.salt), iterations: env.iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(env.iv) }, key, b64(env.ct));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+const col = p => p == null ? 'var(--line)' : p >= 80 ? 'var(--bad)' : p >= 50 ? 'var(--warn)' : 'var(--ok)';
+const fmtTok = n => n == null ? '-' : n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n);
+function left(iso){ if(!iso) return ''; let s=Math.max(0,(Date.parse(iso)-Date.now())/1000); const d=Math.floor(s/86400); s-=d*86400; const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60);
+  const at=new Date(iso).toLocaleString('ko-KR',{month:'numeric',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
+  return Date.parse(iso) < Date.now() ? '리셋됨 ('+at+')' : (d?d+'일 ':'')+(h?h+'시간 ':'')+m+'분 후 리셋 ('+at+')'; }
+function ago(iso){ if(!iso) return ''; const m=Math.round((Date.now()-Date.parse(iso))/60000); return m<1?'방금':m<60?m+'분 전':m<1440?Math.round(m/60)+'시간 전':Math.round(m/1440)+'일 전'; }
+function bar(label,w){ if(!w) return ''; const p=w.usedPct;
+  return `<div class="row"><div class="lab"><span>${label}</span><b>${p??'-'}% 사용 · ${p==null?'-':100-p}% 남음</b></div>
+  <div class="bar"><i style="width:${p??0}%;background:${col(p)}"></i></div>
+  <div class="lab" style="margin-top:4px"><span>${left(w.resetsAt)}</span></div></div>`; }
+function spark(h,k5,kw){ const pts=(h||[]).filter(x=>x[k5]!=null).slice(-72); if(pts.length<2) return '';
+  const line=k=>pts.map((x,i)=>`${(i/(pts.length-1)*100).toFixed(1)},${(40-(x[k]??0)/100*38).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="var(--acc)" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${line(k5)}"/><polyline fill="none" stroke="var(--mut)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" points="${line(kw)}"/></svg>`; }
+function card(k,s,d){ if(!s) return ''; const at=d.updatedAt?.[k]; const age=at?`<span class="pill">${ago(at)}</span>`:'';
+  let body='';
+  if(!s.ok) body=`<div class="sub" style="color:var(--bad)">${s.error||'조회 실패'}</div>`;
+  else if(k==='aside'){ const f=s.fiveHour,w=s.weekly,m=s.extra?.byModel||{};
+    body=`<div class="kv"><span>최근 5시간</span><b>${fmtTok(f.tokens)} 토큰 · ${f.turns}턴</b><span>최근 7일</span><b>${fmtTok(w.tokens)} 토큰 · ${w.turns}턴</b><span>API 환산(7일)</span><b>$${w.costUsd}</b></div>
+    <div class="models">${Object.entries(m).sort((a,b)=>b[1].tokens-a[1].tokens).slice(0,5).map(([n,v])=>`<div><span>${n}</span><span>${fmtTok(v.tokens)}</span></div>`).join('')}</div>`; }
+  else { body=bar('5시간 한도',s.fiveHour)+bar('주간 한도',s.weekly); const ex=s.extra||{};
+    if(ex.weeklyOpus) body+=bar('주간 Opus',ex.weeklyOpus);
+    if(ex.resetCoupons!=null) body+=`<div class="kv"><span>한도 초기화 쿠폰</span><b>${ex.resetCoupons}개</b></div>`;
+    body+= k==='claude'?spark(d.history,'claude5h','claudeW'):spark(d.history,'gpt5h','gptW'); }
+  return `<div class="card"><h2>${s.label}<span class="pill">${s.plan||''}</span>${age}</h2><div class="sub">${s.account||''}</div>${body}</div>`; }
+function render(d){
+  $('#advice').textContent=d.advice||'';
+  $('#grid').innerHTML=['claude','gpt','aside'].map(k=>card(k,d.services?.[k],d)).join('');
+  $('#meta').innerHTML=`${ago(d.generatedAt)} 갱신<br>${new Date(d.generatedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
+  const old=(Date.now()-Date.parse(d.generatedAt))/60000;
+  $('#stale').style.display=old>150?'block':'none';
+  $('#stale').textContent=old>150?`데이터가 ${ago(d.generatedAt)} 기준입니다. PC가 꺼져 있거나 절전 중이면 갱신이 멈춰요.`:'';
+}
+async function load(pw){
+  const env=await (await fetch('data.json?t='+Date.now(),{cache:'no-store'})).json();
+  const d=await decrypt(env,pw); render(d); return d;
+}
+async function unlock(pw,save){
+  try{ await load(pw); if(save) localStorage.setItem(KEY,pw); $('#lock').classList.add('hide'); $('#app').classList.remove('hide'); }
+  catch(e){ $('#err').textContent = (e && e.name==='OperationError') ? '비밀번호가 맞지 않아요.' : '불러오기 실패: '+e; localStorage.removeItem(KEY); }
+}
+$('#go').onclick=()=>unlock($('#pw').value.trim(),true);
+$('#pw').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#go').click(); });
+$('#reload').onclick=()=>load(localStorage.getItem(KEY)).catch(e=>alert(e));
+$('#logout').onclick=e=>{ e.preventDefault(); localStorage.removeItem(KEY); location.reload(); };
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && localStorage.getItem(KEY)) load(localStorage.getItem(KEY)).catch(()=>{}); });
+const saved=localStorage.getItem(KEY); if(saved) unlock(saved,false);
+setInterval(()=>{ const p=localStorage.getItem(KEY); if(p) load(p).catch(()=>{}); },5*60*1000);
+</script>
+</body>
+</html>
