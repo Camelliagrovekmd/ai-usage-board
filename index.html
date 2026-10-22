@@ -20,7 +20,13 @@
   header h1{font-size:18px;margin:0}
   header .meta{margin-left:auto;color:var(--mut);font-size:12px;text-align:right}
   button,input{font:inherit}
-  .btn{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:13px}
+  .btn{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:13px;cursor:pointer;transition:background .15s,color .15s,border-color .15s,transform .05s;text-decoration:none;display:inline-block}
+  .btn:active{transform:scale(.96)}
+  .btn.busy{background:var(--acc);border-color:var(--acc);color:#fff}
+  .btn.done{background:var(--ok);border-color:var(--ok);color:#06210f}
+  .btn.same{background:var(--line);color:var(--tx)}
+  .btn.fail{background:var(--bad);border-color:var(--bad);color:#fff}
+  .btn.tg{background:#229ED9;border-color:#229ED9;color:#fff}
   .advice{margin:8px 16px;padding:12px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:600;font-size:14px}
   .stale{margin:0 16px 8px;padding:10px 12px;border-radius:12px;border:1px solid var(--warn);color:var(--warn);font-size:13px;display:none}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:4px 16px 16px}
@@ -58,13 +64,14 @@
   <header>
     <h1>AI 사용량</h1>
     <button class="btn" id="reload">새로고침</button>
+    <a class="btn tg" id="live" href="https://t.me/Camelliagrove_kmcbot?text=%EC%82%AC%EC%9A%A9%EB%9F%89" target="_blank" rel="noopener">실시간 조회</a>
     <div class="meta" id="meta"></div>
   </header>
   <div class="stale" id="stale"></div>
   <div class="advice" id="advice"></div>
   <div class="grid" id="grid"></div>
   <footer>
-    PC의 Aside가 매시간(08~22시) 갱신합니다. 실시간 값이 필요하면 텔레그램 봇에 "사용량"이라고 보내세요.<br>
+    새로고침: 매시간(08~22시) 올라오는 최신 데이터를 다시 불러와요.<br>실시간 조회: 텔레그램에 "사용량"이 입력된 채로 열려요. 전송하면 실시간으로 조회하고 이 화면도 1~2분 안에 갱신돼요.<br>
     초록 &lt;50% · 노랑 &lt;80% · 빨강 ≥80% · 그래프 실선 5시간, 점선 주간.
     <br><a href="#" id="logout" style="color:var(--mut)">이 기기에서 비밀번호 지우기</a>
   </footer>
@@ -113,7 +120,7 @@ function render(d){
 }
 async function load(pw){
   const env=await (await fetch('data.json?t='+Date.now(),{cache:'no-store'})).json();
-  const d=await decrypt(env,pw); render(d); return d;
+  const d=await decrypt(env,pw); render(d); window.__lastAt=d.generatedAt; return d;
 }
 async function unlock(pw,save){
   try{ await load(pw); if(save) localStorage.setItem(KEY,pw); $('#lock').classList.add('hide'); $('#app').classList.remove('hide'); }
@@ -121,7 +128,20 @@ async function unlock(pw,save){
 }
 $('#go').onclick=()=>unlock($('#pw').value.trim(),true);
 $('#pw').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#go').click(); });
-$('#reload').onclick=()=>load(localStorage.getItem(KEY)).catch(e=>alert(e));
+$('#reload').onclick=async()=>{
+  const b=$('#reload'); if(b.classList.contains('busy')) return;
+  const before=window.__lastAt;
+  b.className='btn busy'; b.textContent='확인 중...';
+  try{
+    const d=await load(localStorage.getItem(KEY));
+    const changed=d.generatedAt!==before;
+    b.className='btn '+(changed?'done':'same');
+    b.textContent=changed?'새 데이터 반영됨':'최신 상태';
+  }catch(e){ b.className='btn fail'; b.textContent='불러오기 실패'; }
+  setTimeout(()=>{ b.className='btn'; b.textContent='새로고침'; },2500);
+};
+$('#live').onclick=()=>{ const s=Date.now(); const p=localStorage.getItem(KEY); let n=0;
+  const t=setInterval(async()=>{ n++; try{ const d=await load(p); if(Date.parse(d.generatedAt)>s){ clearInterval(t); const b=$('#reload'); b.className='btn done'; b.textContent='실시간 값 반영됨'; setTimeout(()=>{b.className='btn';b.textContent='새로고침';},4000);} }catch{} if(n>=20) clearInterval(t); },15000); };
 $('#logout').onclick=e=>{ e.preventDefault(); localStorage.removeItem(KEY); location.reload(); };
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden && localStorage.getItem(KEY)) load(localStorage.getItem(KEY)).catch(()=>{}); });
 const saved=localStorage.getItem(KEY); if(saved) unlock(saved,false);
