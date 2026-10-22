@@ -155,10 +155,10 @@ function renderCtl(c){
 let wlAll=false;
 function renderWl(list){
   const el=$('#wl'); if(!el) return;
-  if(!list||!list.length){ el.innerHTML='<div class="card"><h2>AI 작업일지</h2><div class="sub">아직 기록이 없어요. 매일 밤 22:30에 그날 작업이 요약돼 올라와요.</div></div>'; return; }
+  if(!list||!list.length){ el.innerHTML='<div class="card"><h2>AI 작업일지</h2><div class="sub">아직 기록이 없어요. 매일 밤 18:30에 그날 작업이 요약돼 올라와요.</div></div>'; return; }
   const fmtD=s=>{ const d=new Date(s+'T00:00:00+09:00'); return d.toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short',timeZone:'Asia/Seoul'}); };
   const shown=wlAll?list:list.slice(0,7);
-  el.innerHTML=`<div class="card"><h2>AI 작업일지<span class="pill">${list.length}일 기록</span></h2><div class="sub">매일 주요 작업을 짧게 요약해 쌓아요 (22:30 자동 기록)</div>${shown.map(e=>`<div class="day"><div class="dh"><b>${esc(fmtD(e.date))}</b><span>${esc(e.headline||'')}</span></div><ul>${(e.items||[]).map(i=>`<li><em>${esc(i.project)}</em>${esc(i.text)}</li>`).join('')}</ul></div>`).join('')}${list.length>7?`<button class="btn more" id="wlmore">${wlAll?'최근 7일만 보기':'이전 기록 더 보기 ('+(list.length-7)+'일)'}</button>`:''}</div>`;
+  el.innerHTML=`<div class="card"><h2>AI 작업일지<span class="pill">${list.length}일 기록</span></h2><div class="sub">매일 주요 작업을 짧게 요약해 쌓아요 (18:30 자동 기록)</div>${shown.map(e=>`<div class="day"><div class="dh"><b>${esc(fmtD(e.date))}</b><span>${esc(e.headline||'')}</span></div><ul>${(e.items||[]).map(i=>`<li><em>${esc(i.project)}</em>${esc(i.text)}</li>`).join('')}</ul></div>`).join('')}${list.length>7?`<button class="btn more" id="wlmore">${wlAll?'최근 7일만 보기':'이전 기록 더 보기 ('+(list.length-7)+'일)'}</button>`:''}</div>`;
   const m=$('#wlmore'); if(m) m.onclick=()=>{ wlAll=!wlAll; renderWl(list); };
 }
 function render(d){
