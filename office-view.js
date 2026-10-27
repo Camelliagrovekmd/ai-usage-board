@@ -83,7 +83,7 @@
   .of-lock{font-size:12px;color:var(--of-mut);background:#f7f0e3;border-radius:10px;padding:8px 10px;margin-top:6px}
   .of-empty{font-size:12.5px;color:var(--of-mut)}
   @media (max-width:1180px){.of{grid-template-columns:1fr 1fr}.of>.of-col:first-child{grid-column:1/-1}}
-  @media (max-width:640px){.of{grid-template-columns:1fr;margin:6px 8px 12px;padding:8px}.of-tag{font-size:10px;padding:2px 6px}.of-tag small,.of-tag .of-badge{display:none}.of-top{font-size:11px;padding:6px 8px}.of-top b{font-size:13px}}
+  @media (max-width:640px){.of-stage .of-top{position:static;margin:0;border-radius:0 0 14px 14px;box-shadow:none;background:#fffdf8}.of-tag{padding:1px 5px !important;font-size:9.5px !important;border-radius:8px}.of-tag .of-l2{display:none !important}.of-tag .of-dot{width:6px;height:6px}.of-tag::after{border-width:4px}.of-tag.boss small{display:none}.of-tag.boss{font-size:10px !important}.of-av.lg{width:16px;height:16px}.of-fsbtn{font-size:11px;padding:4px 8px;right:6px;top:6px}.of-full .of-tag .of-l2{display:flex !important}.of-full .of-tag{font-size:11px !important}.of-full .of-stage .of-top{display:none}.of{grid-template-columns:1fr;margin:6px 8px 12px;padding:8px}.of-tag{font-size:10px;padding:2px 6px}.of-tag small,.of-tag .of-badge{display:none}.of-top{font-size:11px;padding:6px 8px}.of-top b{font-size:13px}}
   `;
   function ensureCss() { if (document.getElementById('of-css')) return; const s = document.createElement('style'); s.id = 'of-css'; s.textContent = css; document.head.appendChild(s); }
   const dname = (o, id) => (o.depts.find(d => d.id === id) || {}).name || '';
