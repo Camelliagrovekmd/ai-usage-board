@@ -68,6 +68,12 @@
   .of-dock{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:nowrap;overflow-x:auto;padding:0 12px;background:rgba(255,253,248,.96);border-top:1px solid #eadfcb}
   .of-dock button{flex:none;border:1px solid #eadfcb;background:#fff;border-radius:14px;padding:8px 13px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;color:#2b2a26}
   .of-dock button em{font-style:normal;background:#2e8b57;color:#fff;border-radius:10px;padding:0 7px;font-size:11px}.of-dock button em.a{background:#c8463d}
+  .of-chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid #b9ad97;background:#fff;color:#fff;font-weight:900;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;padding:0}
+  .of-chk:hover{border-color:#2e8b57}.of-todo.done .of-chk,.of-todo.checking .of-chk{background:#2e8b57;border-color:#2e8b57}
+  .of-todo b{transition:color .4s}.of-todo b{background:linear-gradient(currentColor,currentColor) no-repeat 0 55%/0% 1.5px;transition:background-size .45s ease,color .4s}
+  .of-todo.checking b,.of-todo.done b{background-size:100% 1.5px;color:#9a917f}.of-todo.checking{opacity:.75;transition:opacity .6s}.of-todo.done{opacity:.8}
+  .of-todo .of-t b{display:inline}.of-todo .of-t span{display:block}
+  .of-donebox{margin-top:12px;border-top:1px dashed #eadfcb;padding-top:8px}.of-donebox summary{cursor:pointer;font-weight:700;color:#8a8276;font-size:13.5px;padding:4px 0}
   .of-pre{font-family:inherit;white-space:pre-wrap;font-size:13.5px;line-height:1.6;background:#f7f0e3;border-radius:12px;padding:12px 14px;margin:0}
   .of-st{font-size:11px;border-radius:8px;padding:2px 7px;background:#efe9df;color:var(--of-mut)}
   .of-st.w{background:#d9f0e2;color:#1f6b43}.of-st.a{background:#fbe7c6;color:#9a5d0b}
@@ -115,17 +121,34 @@
     const ub = (lab, w) => w ? `<div class="of-sub" style="display:flex;justify-content:space-between"><span>${lab}</span><b style="color:var(--of-tx)">${w.usedPct ?? '-'}%</b></div><div class="of-bar"><i style="width:${w.usedPct ?? 0}%;background:${pc(w.usedPct)}"></i></div>` : '';
     const use = `<div class="of-card"><h3>⚡ 오늘 사용량</h3>${ub('Claude 5시간', U.claude?.fiveHour)}${ub('Claude 주간', U.claude?.weekly)}${ub('GPT 5시간', U.gpt?.fiveHour)}${ub('GPT 주간', U.gpt?.weekly)}<div class="of-sub">오늘 작업 ${c.tasksToday ?? 0}건</div></div>`;
     const log = `<div class="of-card"><h3>📝 작업 기록</h3>${det ? ((o.log || []).slice(0, 10).map(l => `<div class="of-log"><em>${esc(dname(o, l.dept))}</em><span>${esc(l.text)}</span></div>`).join('') || '<div class="of-empty">기록이 없어요.</div>') : lock('작업 기록')}</div>`;
+    const todoHtml = B => {
+      const it = (t, d) => `<div class="of-li of-todo ${d ? 'done' : ''}" data-t="${esc(t.text)}"><button class="of-chk" data-chk="${d ? 0 : 1}" aria-label="${d ? '완료 취소' : '완료'}">${d ? '✓' : ''}</button><div class="of-t"><b style="white-space:normal">${esc(t.text)}</b><span>${esc(dname(o, t.dept))}${t.at ? ' · ' + esc(t.at) + ' 등록' : ''}${d && t.doneAt ? ' · ' + esc(t.doneAt) + ' 완료' : ''}</span></div></div>`;
+      const open = (B.todos || []).map(t => it(t, false)).join('') || '<div class="of-empty">남은 할 일이 없어요. 👍</div>';
+      const done = (B.done || []);
+      return open + `<details class="of-donebox" ${window.__ofDoneOpen ? 'open' : ''}><summary>완료한 일 ${done.length}건</summary>${done.map(t => it(t, true)).join('') || '<div class="of-empty">아직 없어요.</div>'}</details>` + (window.OF_TODO_API ? '' : '<div class="of-lock" style="margin-top:8px">⚠ PC 서버가 꺼져 있어 체크가 이 브라우저에만 저장돼요. start.cmd를 실행하면 할 일 파일에 바로 반영돼요.</div>');
+    };
+    const toggleTodo = async (text, done) => {
+      const B = o.boss; const from = done ? B.todos : B.done, to = done ? B.done : B.todos; const k = from.findIndex(t => t.text === text); if (k < 0) return;
+      const item = from.splice(k, 1)[0]; const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+      if (done) { item.doneAt = today; to.unshift(item); } else { delete item.doneAt; to.push(item); }
+      c.todos = B.todos.length; c.doneTodos = B.done.length;
+      if (window.OF_TODO_API) { try { const r = await fetch(window.OF_TODO_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, done }) }); if (!r.ok) throw new Error(r.status); } catch (e) { alert('할 일 파일 저장 실패: ' + e); } }
+      else { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); L[text] = done ? today : null; localStorage.setItem('of.todoLocal', JSON.stringify(L)); }
+    };
+    if (!window.OF_TODO_API && o.boss) { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); for (const [t, d] of Object.entries(L)) { const B = o.boss; const inOpen = (B.todos || []).findIndex(x => x.text === t); const inDone = (B.done || []).findIndex(x => x.text === t); if (d && inOpen >= 0) { const x = B.todos.splice(inOpen, 1)[0]; x.doneAt = d; (B.done = B.done || []).unshift(x); } else if (!d && inDone >= 0) { const x = B.done.splice(inDone, 1)[0]; delete x.doneAt; B.todos.push(x); } } }
     const openBoss = (tab) => {
       const B = o.boss || {}, n = c, br = B.briefing;
       const sec = {
-        todo: ['✅ 할 일', det ? (B.todos || []).map(t => `<div class="of-li"><span class="of-ic">☐</span><div class="of-t"><b style="white-space:normal">${esc(t.text)}</b><span>${esc(dname(o, t.dept))}${t.at ? ' · ' + esc(t.at) + ' 등록' : ''}</span></div></div>`).join('') || '<div class="of-empty">할 일이 없어요.</div>' : `<div class="of-big">${n.todos ?? 0}건</div>` + lock('할 일')],
+        todo: ['✅ 할 일', det ? todoHtml(B) : `<div class="of-big">${n.todos ?? 0}건</div>` + lock('할 일')],
         appr: ['🔔 승인할 일', det ? ((B.recentPosts || []).length ? `<div class="of-lock" style="margin:0 0 8px;color:#2b2a26"><b>📣 최근 게시</b>${B.recentPosts.map(p => `<div style="margin-top:4px">${esc(p.kind)}: <b>${esc(p.title)}</b> · ${esc(p.at)} · ${esc(p.channel)} · ${p.days === 0 ? '오늘' : p.days + '일 전'}${p.summary ? '<br><span class="of-sub">' + esc(p.summary) + '</span>' : ''}</div>`).join('')}</div>` : '') + (B.approvals || []).map(a => `<div class="of-li"><span class="of-ic">${dicon(o, a.dept)}</span><div class="of-t"><b style="white-space:normal">${esc(a.title)}</b>${a.summary ? `<span style="display:block">${esc(a.summary)}</span>` : ''}<span>${esc(dname(o, a.dept))}${a.due ? ' · ' + esc(a.due) : ''} · 텔레그램에 "○○ 승인"이라고 보내면 처리돼요</span></div></div>`).join('') || '<div class="of-empty">승인할 일이 없어요.</div>' : `<div class="of-big">${n.approvals ?? 0}건</div>` + lock('승인 항목')],
         rep: ['📋 알아둘 보고', det ? (B.reports || []).map(r => `<div class="of-log"><em>${r.level === 'warn' ? '⚠ ' : ''}${esc(dname(o, r.dept))}</em><span>${esc(r.text)}</span></div>`).join('') || '<div class="of-empty">새 보고가 없어요.</div>' : `<div class="of-big">${n.reports ?? 0}건</div>` + lock('보고')],
         brief: ['☀️ 아침 브리핑', det ? (br ? `<div class="of-sub" style="margin-bottom:6px">${esc(br.date)} 작성 · 매일 08:00 텔레그램으로도 받아요</div><pre class="of-pre">${esc(br.text)}</pre>` : '<div class="of-empty">아직 브리핑이 없어요. 매일 08:00에 만들어져요.</div>') : `<div class="of-sub">${n.briefingAt ? md(n.briefingAt) + ' ' + hm(n.briefingAt) + ' 작성' : '아직 없음'} · 매일 08:00 텔레그램으로 발송</div>` + lock('브리핑 내용')],
       };
       const m = document.createElement('div'); m.className = 'of-modal';
-      const draw = k => { m.innerHTML = `<div class="of-box"><h2>${AV('xl')} 원장실<button>닫기</button></h2><div class="of-sub">원장님이 하실 일·승인할 일·알아둘 보고·아침 브리핑</div><div class="of-tabs">${Object.entries(sec).map(([id, s]) => `<button data-k="${id}" class="${id === k ? 'on' : ''}">${s[0]}${id === 'todo' ? ' ' + (n.todos ?? 0) : id === 'appr' ? ' ' + (n.approvals ?? 0) : ''}</button>`).join('')}</div><div>${sec[k][1]}</div></div>`;
-        m.querySelector('h2 button').onclick = () => m.remove(); m.querySelectorAll('.of-tabs button').forEach(b => b.onclick = () => draw(b.dataset.k)); };
+      const draw = k => { if (det) sec.todo[1] = todoHtml(o.boss); m.innerHTML = `<div class="of-box"><h2>${AV('xl')} 원장실<button>닫기</button></h2><div class="of-sub">원장님이 하실 일·승인할 일·알아둘 보고·아침 브리핑</div><div class="of-tabs">${Object.entries(sec).map(([id, s]) => `<button data-k="${id}" class="${id === k ? 'on' : ''}">${s[0]}${id === 'todo' ? ' ' + (n.todos ?? 0) : id === 'appr' ? ' ' + (n.approvals ?? 0) : ''}</button>`).join('')}</div><div>${sec[k][1]}</div></div>`;
+        m.querySelector('h2 button').onclick = () => m.remove(); m.querySelectorAll('.of-tabs button').forEach(b => b.onclick = () => draw(b.dataset.k));
+          const db = m.querySelector('.of-donebox'); if (db) db.ontoggle = () => { window.__ofDoneOpen = db.open; };
+          m.querySelectorAll('[data-chk]').forEach(b => b.onclick = async () => { const row = b.closest('.of-todo'); const done = b.dataset.chk === '1'; row.classList.add(done ? 'checking' : 'unchecking'); if (done) b.textContent = '✓'; await toggleTodo(row.dataset.t, done); setTimeout(() => { const sc = m.querySelector('.of-box').scrollTop; draw('todo'); m.querySelector('.of-box').scrollTop = sc; }, 650); }); };
       m.onclick = e => { if (e.target === m) m.remove(); }; draw(tab || 'todo'); document.body.appendChild(m);
     };
     const panel = (title, html) => { const m = document.createElement('div'); m.className = 'of-modal'; m.innerHTML = '<div class="of-box"><h2>' + title + '<button>닫기</button></h2><div>' + html + '</div></div>'; m.querySelector('h2 button').onclick = () => m.remove(); m.onclick = e => { if (e.target === m) m.remove(); }; document.body.appendChild(m); };
