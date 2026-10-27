@@ -6,22 +6,23 @@
   const until = iso => { if (!iso) return ''; const m = Math.round((Date.parse(iso) - Date.now()) / 60000); return m < 1 ? '곧' : m < 60 ? m + '분 뒤' : Math.round(m / 60) + '시간 뒤'; };
   const hm = iso => iso ? new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }) : '';
   const md = iso => iso ? new Date(iso).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }) : '';
-  const ICON = { '원장': '🧑‍⚕️', '너구리': '🦝', '곰': '🐻', '부엉이': '🦉', '토끼': '🐰', '여우': '🦊', '사슴': '🦌', '다람쥐': '🐿️', '수달': '🦦', '고양이': '🐱' };
+  const ICON = { '원장': '<img class="of-av" src="' + (window.OF_AVATAR || 'office/avatar.png') + '" alt="원장">', '너구리': '🦝', '곰': '🐻', '부엉이': '🦉', '토끼': '🐰', '여우': '🦊', '사슴': '🦌', '다람쥐': '🐿️', '수달': '🦦', '고양이': '🐱' };
+  const AV = (s = '') => `<img class="of-av ${s}" src="${window.OF_AVATAR || 'office/avatar.png'}" alt="원장">`;
   const ST = { '일하는 중': 'w', '승인 대기': 'a', '쉬는 중': 'r', '확인 필요': 'a', '확인 완료': 'r' };
   const css = `
   .of{--of-bg:#fbf7ef;--of-card:#fffdf8;--of-line:#eadfcb;--of-tx:#2b2a26;--of-mut:#8a8276;--of-g:#2e8b57;--of-a:#e39b2d;--of-r:#b9b2a6;--of-red:#c8463d;
       color:var(--of-tx);background:linear-gradient(180deg,#f6efe2,#efe6d4);border-radius:20px;padding:12px;margin:8px 16px 16px;display:grid;grid-template-columns:minmax(0,1fr) 300px 290px;gap:12px}
   .of *{box-sizing:border-box}
   .of-stage{position:relative;border-radius:18px;overflow:hidden;background:#d9cbb2;box-shadow:0 6px 24px rgba(80,60,30,.18)}
-  .of-stage img{display:block;width:100%;height:auto}
-  .of-top{position:absolute;left:12px;top:12px;display:flex;gap:8px;align-items:center;background:rgba(255,253,248,.92);border-radius:14px;padding:8px 12px;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.12);flex-wrap:wrap}
+  .of-stage>img{display:block;width:100%;height:auto}
+  .of-top{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;align-items:center;background:rgba(255,253,248,.92);border-radius:14px;padding:8px 12px;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.12);flex-wrap:wrap}
   .of-top b{font-size:15px}
   .of-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--of-mut)}
   .of-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--of-r)}
   .of-dot.w{background:var(--of-g);box-shadow:0 0 0 3px rgba(46,139,87,.2);animation:ofp 1.6s infinite}.of-dot.a{background:var(--of-a)}
   @keyframes ofp{50%{box-shadow:0 0 0 6px rgba(46,139,87,.05)}}
   .of-tag{position:absolute;transform:translate(-50%,calc(-100% - 6px));background:rgba(255,253,248,.95);border:1px solid var(--of-line);border-radius:12px;padding:3px 8px;font-size:12px;z-index:2;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;gap:6px;cursor:default}
-  .of-tag small{font-weight:600;color:var(--of-mut);font-size:11px;display:none}.of-tag>.of-badge{display:none}.of-tag:hover{z-index:5}.of-tag:hover small,.of-tag:hover>.of-badge{display:inline}.of-tag.boss small{display:inline}
+  .of-tag{flex-direction:column;align-items:center;gap:1px;line-height:1.25}.of-tag .of-l1{display:flex;align-items:center;gap:5px}.of-tag .of-l2{display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--of-mut)}.of-tag .of-l2 .of-badge{font-size:9.5px;padding:0 5px;margin:0}.of-tag.w .of-l2 b{color:#1f6b43}.of-tag.a .of-l2 b{color:#9a5d0b}.of-tag:hover{z-index:5}.of-tag.boss{flex-direction:row}.of-tag.boss small{font-weight:600;color:#f3d9a4;font-size:11px}
   .of-tag::after{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);border:6px solid transparent;border-bottom:0;border-top-color:rgba(255,253,248,.95)}
   .of-tag.boss::after{border-top-color:#2b2a26}
   .of-tag .of-badge{margin-left:2px}
@@ -56,6 +57,17 @@
   .of-box h2{margin:0 0 4px;font-size:19px;display:flex;align-items:center;gap:8px}.of-box h2 button{margin-left:auto;border:0;background:#efe9df;border-radius:10px;padding:4px 10px;cursor:pointer;font:inherit}
   .of-tabs{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}.of-tabs button{border:1px solid #eadfcb;background:#fff;border-radius:20px;padding:5px 12px;cursor:pointer;font:inherit;font-size:13px}
   .of-tabs button.on{background:#2e8b57;border-color:#2e8b57;color:#fff}
+  .of-av{width:18px;height:18px;border-radius:50%;vertical-align:middle;object-fit:cover;background:#fbf3e3}.of-av.lg{width:24px;height:24px;border:2px solid #f3d9a4}.of-av.xl{width:46px;height:46px;border:2px solid #eadfcb}
+  .of-box{max-width:1100px !important;width:min(1100px,96vw) !important;max-height:90vh !important;padding:22px 26px !important;font-size:15px}
+  .of-box h2{font-size:22px !important}.of-box .of-li{font-size:14.5px}.of-box .of-li .of-t span{font-size:12.5px}.of-box .of-log{font-size:14px}.of-box .of-tabs button{font-size:14.5px;padding:7px 15px}
+  .of-fsbtn{position:absolute;right:12px;top:12px;z-index:6;border:0;border-radius:12px;background:rgba(43,42,38,.85);color:#fff;font:inherit;font-size:13px;font-weight:700;padding:7px 12px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+  .of-full{position:fixed;inset:0;z-index:40;margin:0;border-radius:0;display:block;padding:0;background:#1d1a15}
+  .of-full .of-fswrap{position:absolute;inset:0 0 64px 0;display:flex;align-items:center;justify-content:center}
+  .of-full .of-stage{width:min(100vw,calc((100vh - 64px) * 1.777));border-radius:0;box-shadow:none}
+  .of-full .of-tag{font-size:14px}.of-full .of-tag .of-l2{font-size:12px}
+  .of-dock{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:nowrap;overflow-x:auto;padding:0 12px;background:rgba(255,253,248,.96);border-top:1px solid #eadfcb}
+  .of-dock button{flex:none;border:1px solid #eadfcb;background:#fff;border-radius:14px;padding:8px 13px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;color:#2b2a26}
+  .of-dock button em{font-style:normal;background:#2e8b57;color:#fff;border-radius:10px;padding:0 7px;font-size:11px}.of-dock button em.a{background:#c8463d}
   .of-pre{font-family:inherit;white-space:pre-wrap;font-size:13.5px;line-height:1.6;background:#f7f0e3;border-radius:12px;padding:12px 14px;margin:0}
   .of-st{font-size:11px;border-radius:8px;padding:2px 7px;background:#efe9df;color:var(--of-mut)}
   .of-st.w{background:#d9f0e2;color:#1f6b43}.of-st.a{background:#fbe7c6;color:#9a5d0b}
@@ -78,13 +90,13 @@
     if (!o || !o.depts) { el.innerHTML = '<div class="of"><div class="of-card">운영실 데이터가 아직 없어요. 다음 갱신(매시 정각) 뒤에 보여요.</div></div>'; return; }
     const det = !!opt.detail, c = o.counts || {};
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
-    const stage = `<div class="of-stage"><img src="${esc(opt.bg || 'office/office_bg.webp')}" alt="AI 동백숲한의원 운영실">
+    const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(opt.bg || 'office/office_bg.webp')}" alt="AI 동백숲한의원 운영실">
       <div class="of-top"><b>AI 동백숲한의원 운영실</b>
         <span class="of-chip"><i class="of-dot w"></i>일하는 중 ${c.working ?? 0}</span>
         <span class="of-chip"><i class="of-dot a"></i>승인 대기 ${c.waitingDepts ?? 0}</span>
         <span class="of-chip"><i class="of-dot"></i>쉬는 중 ${c.resting ?? 0}</span>
-        <span class="of-chip">· ${ago(o.generatedAt)} 갱신</span><button class="of-bossbtn" data-boss="1">🧑‍⚕️ 원장실</button></div>
-      ${o.depts.map(d => d.boss ? `<div class="of-tag boss" data-boss="1" style="left:${d.x}%;top:${d.y}%">🧑‍⚕️ 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : `<div class="of-tag ${ST[d.status]}" style="left:${d.x}%;top:${d.y}%"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}<small>${esc(d.status)}</small>${badge(d.model)}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
+        <span class="of-chip">· ${ago(o.generatedAt)} 갱신</span><button class="of-bossbtn" data-boss="1">${AV()} 원장실</button></div>
+      ${o.depts.map(d => d.boss ? `<div class="of-tag boss" data-boss="1" style="left:${d.x}%;top:${d.y}%">${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : `<div class="of-tag ${ST[d.status]}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${esc(d.status)}</b>${badge(d.model)}</span>${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
     </div>`;
     // 알림
     const appr = det ? (o.approvals || []) : [];
@@ -112,11 +124,24 @@
         brief: ['☀️ 아침 브리핑', det ? (br ? `<div class="of-sub" style="margin-bottom:6px">${esc(br.date)} 작성 · 매일 08:00 텔레그램으로도 받아요</div><pre class="of-pre">${esc(br.text)}</pre>` : '<div class="of-empty">아직 브리핑이 없어요. 매일 08:00에 만들어져요.</div>') : `<div class="of-sub">${n.briefingAt ? md(n.briefingAt) + ' ' + hm(n.briefingAt) + ' 작성' : '아직 없음'} · 매일 08:00 텔레그램으로 발송</div>` + lock('브리핑 내용')],
       };
       const m = document.createElement('div'); m.className = 'of-modal';
-      const draw = k => { m.innerHTML = `<div class="of-box"><h2>🧑‍⚕️ 원장실<button>닫기</button></h2><div class="of-sub">원장님이 하실 일·승인할 일·알아둘 보고·아침 브리핑</div><div class="of-tabs">${Object.entries(sec).map(([id, s]) => `<button data-k="${id}" class="${id === k ? 'on' : ''}">${s[0]}${id === 'todo' ? ' ' + (n.todos ?? 0) : id === 'appr' ? ' ' + (n.approvals ?? 0) : ''}</button>`).join('')}</div><div>${sec[k][1]}</div></div>`;
+      const draw = k => { m.innerHTML = `<div class="of-box"><h2>${AV('xl')} 원장실<button>닫기</button></h2><div class="of-sub">원장님이 하실 일·승인할 일·알아둘 보고·아침 브리핑</div><div class="of-tabs">${Object.entries(sec).map(([id, s]) => `<button data-k="${id}" class="${id === k ? 'on' : ''}">${s[0]}${id === 'todo' ? ' ' + (n.todos ?? 0) : id === 'appr' ? ' ' + (n.approvals ?? 0) : ''}</button>`).join('')}</div><div>${sec[k][1]}</div></div>`;
         m.querySelector('h2 button').onclick = () => m.remove(); m.querySelectorAll('.of-tabs button').forEach(b => b.onclick = () => draw(b.dataset.k)); };
       m.onclick = e => { if (e.target === m) m.remove(); }; draw(tab || 'todo'); document.body.appendChild(m);
     };
-    el.innerHTML = `<div class="of"><div class="of-col">${stage}${log}</div><div class="of-col">${alerts}${prog}${rec}</div><div class="of-col">${staff}${use}</div></div>`;
+    const panel = (title, html) => { const m = document.createElement('div'); m.className = 'of-modal'; m.innerHTML = '<div class="of-box"><h2>' + title + '<button>닫기</button></h2><div>' + html + '</div></div>'; m.querySelector('h2 button').onclick = () => m.remove(); m.onclick = e => { if (e.target === m) m.remove(); }; document.body.appendChild(m); };
+    const strip = h => h.replace(/^<div class="of-card"><h3>[\s\S]*?<\/h3>/, '').replace(/<\/div>$/, '');
+    const boards = [['🔔 승인·게시 대기', alerts, c.approvals, 'a'], ['⚙️ 진행 중인 일', prog, c.running], ['📁 최근 완성 자료', rec, c.recent7d], ['👥 직원 현황', staff], ['⚡ 오늘 사용량', use], ['📝 작업 기록', log]];
+    if (window.__ofFull) {
+      el.innerHTML = '<div class="of of-full"><div class="of-fswrap">' + stage + '</div><div class="of-dock"><button data-boss="1">' + AV() + ' 원장실' + ((c.todos || 0) + (c.approvals || 0) ? ' <em class="a">' + ((c.todos || 0) + (c.approvals || 0)) + '</em>' : '') + '</button>' + boards.map((b, i) => '<button data-bd="' + i + '">' + b[0] + (b[2] != null ? ' <em class="' + (b[3] && b[2] ? 'a' : '') + '">' + b[2] + '</em>' : '') + '</button>').join('') + '</div></div>';
+      el.querySelectorAll('[data-bd]').forEach(b => b.onclick = () => { const x = boards[+b.dataset.bd]; panel(x[0], strip(x[1])); });
+      document.body.style.overflow = 'hidden';
+    } else {
+      el.innerHTML = `<div class="of"><div class="of-col">${stage}${log}</div><div class="of-col">${alerts}${prog}${rec}</div><div class="of-col">${staff}${use}</div></div>`;
+      document.body.style.overflow = '';
+    }
+    el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { window.__ofFull = !window.__ofFull; window.renderOffice(el, o, opt); });
+    if (!window.__ofEsc) { window.__ofEsc = true; document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.__ofFull && !document.querySelector('.of-modal')) { window.__ofFull = false; window.__ofLast && window.renderOffice(...window.__ofLast); } }); }
+    window.__ofLast = [el, o, opt];
     el.querySelectorAll('[data-boss]').forEach(b => b.onclick = () => openBoss('todo'));
     if (opt.openBoss) openBoss(opt.openBoss);
   };
