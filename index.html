@@ -103,7 +103,7 @@
     <br><a href="#" id="logout" style="color:var(--mut)">이 기기에서 비밀번호 지우기</a>
   </footer>
 </div>
-<script src="office-view.js?v=1793093810407"></script>
+<script src="office-view.js?v=1793094263348"></script>
 <script>
 const $ = s => document.querySelector(s);
 const KEY = 'aiusage.pw';
@@ -164,7 +164,7 @@ function renderWl(list){
   const m=$('#wlmore'); if(m) m.onclick=()=>{ wlAll=!wlAll; renderWl(list); };
 }
 function render(d){
-  try{ renderOffice($('#office'), d.office, { detail:false, usage:d.services, bg:'office/office_bg.webp' }); }catch(e){ $('#office').textContent='운영실 화면 오류: '+e; }
+  try{ renderOffice($('#office'), d.office, { detail:false, usage:d.services, bg:'office/office_bg.webp?v=1793094263366' }); }catch(e){ $('#office').textContent='운영실 화면 오류: '+e; }
   renderCtl(d.control);
   renderWl(d.worklog);
   $('#advice').textContent=d.advice||'';
