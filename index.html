@@ -104,7 +104,7 @@
   </footer>
 </div>
 <script>window.OF_AVATAR="office/avatar.png?v=1793095546593"</script>
-<script src="office-view.js?v=1793095546593"></script>
+<script src="office-view.js?v=1793097005380"></script>
 <script>
 const $ = s => document.querySelector(s);
 const KEY = 'aiusage.pw';
@@ -165,7 +165,7 @@ function renderWl(list){
   const m=$('#wlmore'); if(m) m.onclick=()=>{ wlAll=!wlAll; renderWl(list); };
 }
 function render(d){
-  try{ renderOffice($('#office'), d.office, { detail:false, usage:d.services, bg:'office/office_bg.webp?v=1793094263366' }); }catch(e){ $('#office').textContent='운영실 화면 오류: '+e; }
+  try{ renderOffice($('#office'), d.office, { detail:false, usage:d.services, bg:'office/office_bg.webp?v=1793097005380' }); }catch(e){ $('#office').textContent='운영실 화면 오류: '+e; }
   renderCtl(d.control);
   renderWl(d.worklog);
   $('#advice').textContent=d.advice||'';
