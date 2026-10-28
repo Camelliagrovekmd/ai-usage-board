@@ -98,6 +98,16 @@
   @keyframes ofHop{0%,86%,100%{margin-top:0}90%{margin-top:-5px}95%{margin-top:0}}
   @media (prefers-reduced-motion:reduce){.of-bub,.of-tag.w,.of-glow,.of-zz span,.of-bub .dots i{animation:none}}
   @media (max-width:640px){.of-bub{font-size:9px;padding:1px 6px;transform:translate(-50%,calc(-100% - 26px));max-width:120px}.of-zz{display:none}.of-glow{width:9%}}
+  .of-anim{position:absolute;inset:0;pointer-events:none;z-index:1}
+  .of-seat{position:absolute;opacity:0;transition:opacity .7s ease}.of-seat.on{opacity:1;animation:ofBob 3.2s ease-in-out infinite}
+  .of-sp{position:absolute;transform:translate(-50%,-100%);transition:left 3s linear,top 3s linear,height 3s linear,opacity .6s ease;filter:drop-shadow(0 4px 3px rgba(60,40,10,.25))}
+  .of-sp.walk{animation:ofWalk .42s ease-in-out infinite}
+  .of-sp.idle{animation:ofSway 4.2s ease-in-out infinite;transform-origin:50% 100%}
+  @keyframes ofBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-0.35%)}}
+  @keyframes ofWalk{0%,100%{transform:translate(-50%,-100%) rotate(-3deg)}50%{transform:translate(-50%,-104%) rotate(3deg)}}
+  @keyframes ofSway{0%,100%{transform:translate(-50%,-100%) rotate(-1.5deg)}50%{transform:translate(-50%,-100%) rotate(1.5deg)}}
+  @media (prefers-reduced-motion:reduce){.of-seat.on,.of-sp.walk,.of-sp.idle{animation:none}.of-sp{transition:none}}
+  .of-tag,.of-glow{z-index:2}
   .of-pre{font-family:inherit;white-space:pre-wrap;font-size:13.5px;line-height:1.6;background:#f7f0e3;border-radius:12px;padding:12px 14px;margin:0}
   .of-st{font-size:11px;border-radius:8px;padding:2px 7px;background:#efe9df;color:var(--of-mut)}
   .of-st.w{background:#d9f0e2;color:#1f6b43}.of-st.a{background:#fbe7c6;color:#9a5d0b}
@@ -115,12 +125,42 @@
   const badge = m => `<span class="of-badge ${m === 'Aside' ? 'x' : m === '원장님' ? 'b' : /GPT/.test(m) && !/Claude/.test(m) ? 'g' : ''}">${esc(m)}</span>`;
   const pc = p => p == null ? '#ccc' : p >= 80 ? '#c8463d' : p >= 50 ? '#e39b2d' : '#2e8b57';
 
+  
+  // ===== 2단계: 직원 움직임 (빈 사무실 + 앉은 조각 + 서 있는 스프라이트) =====
+  const OFW = 1672, OFH = 941;
+  const SEAT = {"boss":[130,268,275,402],"herb":[585,158,735,268],"edu":[922,228,1042,342],"ctl":[638,362,778,478],"col":[372,422,502,548],"ops":[998,448,1142,558],"news":[1388,492,1502,618],"vid":[958,572,1132,722],"diet":[652,612,802,748],"tang":[1178,632,1338,792]};
+  const LOUNGE = { herb: [178, 738, 112], edu: [258, 764, 116], ctl: [340, 748, 106], col: [424, 792, 116], ops: [506, 738, 106], diet: [108, 790, 114], news: [1226, 492, 92], vid: [1304, 514, 96], tang: [1262, 404, 84] };
+  const ASPECT = {"boss":0.622,"herb":0.819,"edu":0.616,"ctl":0.846,"col":0.537,"ops":0.927,"news":0.617,"vid":0.941,"diet":0.819,"tang":0.858};
+  const pct = (v, t) => (v / t * 100).toFixed(3) + '%';
+  const seatFeet = id => { const s = SEAT[id]; return [(s[0] + s[2]) / 2, s[3] - (s[3] - s[1]) * 0.12, (s[3] - s[1]) * 0.95]; };
+  const animLayer = (o, A, ver) => {
+    let prev = {}; try { prev = JSON.parse(localStorage.getItem('of.prevStates') || 'null') || null; } catch { prev = null; }
+    const html = [], moves = [];
+    for (const d of o.depts) { const s = SEAT[d.id]; if (!s) continue; const work = d.boss || d.status === '일하는 중';
+      html.push(`<img class="of-seat${work ? ' on' : ''}" data-seat="${d.id}" src="${A}seats/seat_${d.id}.webp${ver}" alt="" style="left:${pct(s[0], OFW)};top:${pct(s[1], OFH)};width:${pct(s[2] - s[0], OFW)};height:${pct(s[3] - s[1], OFH)}">`);
+      if (d.boss) continue; const L = LOUNGE[d.id]; if (!L) continue;
+      const was = prev ? (prev[d.id] === '일하는 중') : null; const ar = ASPECT[d.id] || 0.7;
+      const from = was === null ? (work ? L : null) : (was !== work ? (was ? seatFeet(d.id) : L) : null);
+      const to = work ? seatFeet(d.id) : L; const start = from || to;
+      const hh = from && work ? L[2] : (work ? seatFeet(d.id)[2] : L[2]);
+      html.push(`<img class="of-sp${!work && !from ? ' idle' : ''}" data-sp="${d.id}" src="${A}sprites/stand_${d.id}.webp${ver}" alt="" style="left:${pct(start[0], OFW)};top:${pct(start[1], OFH)};height:${pct(hh, OFH)};aspect-ratio:${ar};opacity:${(work && !from) ? 0 : 1}">`);
+      if (from) moves.push({ id: d.id, to, work, h: work ? seatFeet(d.id)[2] * 0.9 : L[2] });
+    }
+    try { localStorage.setItem('of.prevStates', JSON.stringify(Object.fromEntries(o.depts.map(d => [d.id, d.status])))); } catch {}
+    return { html: html.join(''), moves };
+  };
+  const runMoves = (root, moves) => { moves.forEach((m, i) => { const sp = root.querySelector('[data-sp="' + m.id + '"]'); const seat = root.querySelector('[data-seat="' + m.id + '"]'); if (!sp) return;
+      if (m.work && seat) seat.classList.remove('on'); if (!m.work && seat) setTimeout(() => seat.classList.remove('on'), 50);
+      setTimeout(() => { sp.classList.add('walk'); sp.style.left = pct(m.to[0], OFW); sp.style.top = pct(m.to[1], OFH); sp.style.height = pct(m.h, OFH); }, 600 + i * 450);
+      setTimeout(() => { sp.classList.remove('walk'); if (m.work) { sp.style.opacity = 0; if (seat) seat.classList.add('on'); } else sp.classList.add('idle'); }, 600 + i * 450 + 3200); }); };
+
   window.renderOffice = function (el, o, opt = {}) {
     ensureCss();
     if (!o || !o.depts) { el.innerHTML = '<div class="of"><div class="of-card">운영실 데이터가 아직 없어요. 다음 갱신(매시 정각) 뒤에 보여요.</div></div>'; return; }
     const det = !!opt.detail, c = o.counts || {};
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
-    const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(opt.bg || 'office/office_bg.webp')}" alt="AI 동백숲한의원 운영실">
+    const A = opt.assets || 'office/', AV2 = opt.assetVer || ''; const AN = opt.anim !== false && !!(opt.anim || window.OF_ANIM) ? animLayer(o, A, AV2) : null;
+    const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(AN ? (opt.emptyBg || (A + 'office_empty.webp' + AV2)) : (opt.bg || 'office/office_bg.webp'))}" alt="AI 동백숲한의원 운영실">${AN ? '<div class="of-anim">' + AN.html + '</div>' : ''}
       <div class="of-top"><b>AI 동백숲한의원 운영실</b>
         <span class="of-chip"><i class="of-dot w"></i>일하는 중 ${c.working ?? 0}</span>
         <span class="of-chip"><i class="of-dot a"></i>승인 대기 ${c.waitingDepts ?? 0}</span>
@@ -202,6 +242,7 @@
       panel((ICON[d.animal] || '') + ' ' + esc(d.name), body); };
     el.querySelectorAll('[data-dept]').forEach(b => b.onclick = e => { e.stopPropagation(); deptPanel(b.dataset.dept); });
     el.querySelectorAll('.of-tag:not(.boss)').forEach((t, i) => { const d = o.depts.filter(x => !x.boss)[i]; if (d) { t.style.cursor = 'pointer'; t.onclick = () => deptPanel(d.id); } });
+    if (AN && AN.moves.length) runMoves(el, AN.moves);
     el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { window.__ofFull = !window.__ofFull; window.renderOffice(el, o, opt); });
     if (!window.__ofEsc) { window.__ofEsc = true; document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.__ofFull && !document.querySelector('.of-modal')) { window.__ofFull = false; window.__ofLast && window.renderOffice(...window.__ofLast); } }); }
     window.__ofLast = [el, o, opt];
