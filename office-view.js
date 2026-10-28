@@ -79,6 +79,25 @@
   .of-ask-row{display:flex;gap:8px;align-items:stretch}.of-ask textarea{flex:1;resize:vertical;min-height:46px;border:1px solid #cfe0d4;border-radius:10px;padding:8px 10px;font:inherit;font-size:14px;background:#fff;color:#2b2a26}
   .of-ask-send{flex:none;border:0;border-radius:10px;background:#229ED9;color:#fff;font:inherit;font-weight:800;padding:0 16px;cursor:pointer}.of-ask .of-sub{margin-top:6px}
   .of-quick{display:inline-flex;gap:4px;margin-left:8px;vertical-align:middle}.of-quick button{border:1px solid #eadfcb;background:#fff;border-radius:8px;font:inherit;font-size:11.5px;padding:1px 8px;cursor:pointer;color:#2b2a26}.of-quick button:hover{border-color:#2e8b57;color:#2e8b57}
+  .of-bub{position:absolute;transform:translate(-50%,calc(-100% - 46px));z-index:3;pointer-events:auto;cursor:pointer;background:#fff;border:1px solid #d9e7dd;border-radius:12px;padding:3px 9px;font-size:11.5px;font-weight:700;color:#1f6b43;white-space:nowrap;max-width:230px;overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 10px rgba(0,0,0,.15);animation:ofFloat 2.6s ease-in-out infinite}
+  .of-bub::after{content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%) rotate(45deg);width:8px;height:8px;background:#fff;border-right:1px solid #d9e7dd;border-bottom:1px solid #d9e7dd}
+  .of-bub .dots i{display:inline-block;width:4px;height:4px;margin-left:2px;border-radius:50%;background:#2e8b57;animation:ofDot 1.2s infinite}.of-bub .dots i:nth-child(2){animation-delay:.2s}.of-bub .dots i:nth-child(3){animation-delay:.4s}
+  .of-bub.a{color:#9a5d0b;border-color:#f3d9a4;animation:ofBlink 1.4s ease-in-out infinite}.of-bub.a::after{border-color:#f3d9a4}
+  .of-zz{position:absolute;right:-16px;top:-12px;width:20px;height:24px;pointer-events:none;font-weight:900;color:#7d8fa3;font-size:12px;text-shadow:0 1px 2px #fff}
+  .of-dots i{display:inline-block;width:4px;height:4px;margin-left:2px;border-radius:50%;background:#2e8b57;animation:ofDot 1.2s infinite}.of-dots i:nth-child(2){animation-delay:.2s}.of-dots i:nth-child(3){animation-delay:.4s}
+  .of-tag.a .of-l2 b{animation:ofBlink 1.4s ease-in-out infinite}
+  .of-now{display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:600;color:#1f6b43;margin-top:1px}
+  .of-zz span{position:absolute;opacity:0;animation:ofZ 3.6s linear infinite}.of-zz span:nth-child(2){animation-delay:1.2s;font-size:11px}.of-zz span:nth-child(3){animation-delay:2.4s;font-size:9px}
+  .of-glow{position:absolute;transform:translate(-50%,-30%);width:7%;aspect-ratio:1;border-radius:50%;z-index:1;pointer-events:none;background:radial-gradient(circle,rgba(120,255,170,.45),rgba(120,255,170,0) 70%);animation:ofGlow 2.4s ease-in-out infinite}
+  .of-tag.w{animation:ofHop 2.6s ease-in-out infinite}
+  @keyframes ofFloat{0%,100%{margin-top:0}50%{margin-top:-4px}}
+  @keyframes ofDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)}}
+  @keyframes ofBlink{0%,100%{opacity:1}50%{opacity:.55}}
+  @keyframes ofZ{0%{opacity:0;transform:translate(0,0)}20%{opacity:1}100%{opacity:0;transform:translate(14px,-26px)}}
+  @keyframes ofGlow{0%,100%{opacity:.55;transform:translate(-50%,-30%) scale(.9)}50%{opacity:1;transform:translate(-50%,-30%) scale(1.08)}}
+  @keyframes ofHop{0%,86%,100%{margin-top:0}90%{margin-top:-5px}95%{margin-top:0}}
+  @media (prefers-reduced-motion:reduce){.of-bub,.of-tag.w,.of-glow,.of-zz span,.of-bub .dots i{animation:none}}
+  @media (max-width:640px){.of-bub{font-size:9px;padding:1px 6px;transform:translate(-50%,calc(-100% - 26px));max-width:120px}.of-zz{display:none}.of-glow{width:9%}}
   .of-pre{font-family:inherit;white-space:pre-wrap;font-size:13.5px;line-height:1.6;background:#f7f0e3;border-radius:12px;padding:12px 14px;margin:0}
   .of-st{font-size:11px;border-radius:8px;padding:2px 7px;background:#efe9df;color:var(--of-mut)}
   .of-st.w{background:#d9f0e2;color:#1f6b43}.of-st.a{background:#fbe7c6;color:#9a5d0b}
@@ -107,7 +126,8 @@
         <span class="of-chip"><i class="of-dot a"></i>승인 대기 ${c.waitingDepts ?? 0}</span>
         <span class="of-chip"><i class="of-dot"></i>쉬는 중 ${c.resting ?? 0}</span>
         <span class="of-chip">· ${ago(o.generatedAt)} 갱신</span><button class="of-bossbtn" data-boss="1">${AV()} 원장실</button></div>
-      ${o.depts.map(d => d.boss ? `<div class="of-tag boss" data-boss="1" style="left:${d.x}%;top:${d.y}%">${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : `<div class="of-tag ${ST[d.status]}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${esc(d.status)}</b>${badge(d.model)}</span>${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
+      ${o.depts.filter(d => !d.boss && d.status === '일하는 중').map(d => `<i class="of-glow" style="left:${d.x}%;top:${d.y}%"></i>`).join('')}
+      ${o.depts.map(d => d.boss ? `<div class="of-tag boss" data-boss="1" style="left:${d.x}%;top:${d.y}%">${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : `<div class="of-tag ${ST[d.status]}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span>${d.status === '쉬는 중' ? '<span class="of-zz"><span>Z</span><span>z</span><span>z</span></span>' : ''}${det && d.current && d.status === '일하는 중' ? `<span class="of-now">${esc(d.current)}</span>` : ''}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
     </div>`;
     // 알림
     const appr = det ? (o.approvals || []) : [];
@@ -176,6 +196,12 @@
       el.innerHTML = `<div class="of"><div class="of-col">${stage}${log}</div><div class="of-col">${alerts}${prog}${rec}</div><div class="of-col">${staff}${use}</div></div>`;
       document.body.style.overflow = '';
     }
+    const deptPanel = id => { const d = o.depts.find(x => x.id === id); if (!d) return; const rec = (d.recent || []);
+      const body = '<div class="of-sub" style="margin-bottom:8px">' + esc(d.role || '') + ' · 담당 ' + esc(d.model || '') + ' · ' + esc(d.status) + (d.lastAt ? ' · 마지막 작업 ' + ago(d.lastAt) : '') + '</div>' +
+        (det ? (rec.length ? rec.map(t => '<div class="of-li"><span class="of-ic">' + (ICON[d.animal] || '•') + '</span><div class="of-t"><b style="white-space:normal">' + esc(t.title) + '</b><span>' + (t.kind === 'routine' ? '자동 작업' : '작업') + ' · ' + md(t.at) + ' ' + hm(t.at) + '</span></div></div>').join('') : '<div class="of-empty">최근 7일 작업이 없어요.</div>') : '<div class="of-big">오늘 ' + (d.today || 0) + '건</div>' + lock('작업'));
+      panel((ICON[d.animal] || '') + ' ' + esc(d.name), body); };
+    el.querySelectorAll('[data-dept]').forEach(b => b.onclick = e => { e.stopPropagation(); deptPanel(b.dataset.dept); });
+    el.querySelectorAll('.of-tag:not(.boss)').forEach((t, i) => { const d = o.depts.filter(x => !x.boss)[i]; if (d) { t.style.cursor = 'pointer'; t.onclick = () => deptPanel(d.id); } });
     el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { window.__ofFull = !window.__ofFull; window.renderOffice(el, o, opt); });
     if (!window.__ofEsc) { window.__ofEsc = true; document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.__ofFull && !document.querySelector('.of-modal')) { window.__ofFull = false; window.__ofLast && window.renderOffice(...window.__ofLast); } }); }
     window.__ofLast = [el, o, opt];
