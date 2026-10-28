@@ -137,6 +137,8 @@
       const item = from.splice(k, 1)[0]; const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
       if (done) { item.doneAt = today; to.unshift(item); } else { delete item.doneAt; to.push(item); }
       c.todos = B.todos.length; c.doneTodos = B.done.length;
+      { const bd = o.depts.find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
+      try { window.renderOffice(el, o, { ...opt, openBoss: undefined }); } catch (e) {}
       if (window.OF_TODO_API) { try { const r = await fetch(window.OF_TODO_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, done }) }); if (!r.ok) throw new Error(r.status); } catch (e) { alert('할 일 파일 저장 실패: ' + e); } }
       else { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); L[text] = done ? today : null; localStorage.setItem('of.todoLocal', JSON.stringify(L)); }
     };
