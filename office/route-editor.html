@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>운영실 이동 경로 편집</title>
+<style>
+body{margin:0;font-family:system-ui,'Malgun Gothic',sans-serif;background:#f6f3ec;color:#2b2a26}
+header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;background:#fffdf8;border-bottom:1px solid #e5dccb;position:sticky;top:0;z-index:5}
+header b{margin-right:6px}
+button,select{font:inherit;font-size:13px;border:1px solid #d6cbb5;background:#fff;border-radius:8px;padding:5px 10px;cursor:pointer}
+button.on{background:#2b2a26;color:#fff;border-color:#2b2a26}
+button.go{background:#1f6b43;color:#fff;border-color:#1f6b43}
+#wrap{padding:8px}
+svg{width:100%;height:auto;display:block;border-radius:10px;touch-action:none;user-select:none;background:#ddd}
+.help{font-size:12.5px;color:#6b665c;padding:4px 10px 10px;line-height:1.6}
+.lg span{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 3px 0 10px;vertical-align:middle}
+text{font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:4px}
+#out{width:100%;height:90px;font-size:11px;display:none;margin-top:6px}
+</style></head><body>
+<header>
+  <b>운영실 이동 경로 편집</b>
+  <button data-m="move" class="on">✋ 옮기기</button>
+  <button data-m="add">＋ 길목 추가</button>
+  <button data-m="link">🔗 길 잇기/끊기</button>
+  <button data-m="del">✕ 길목 삭제</button>
+  <button id="undo">↶ 되돌리기</button>
+  <button id="reset">처음 상태</button>
+  <span style="margin-left:8px">길 미리보기:</span>
+  <select id="who"></select><select id="dest"></select>
+  <button class="go" id="send">텔레그램으로 보내기</button>
+  <button id="copy">복사</button>
+</header>
+<div class="help">
+  <span class="lg"><span style="background:#e0399a"></span>길목(분홍) <span style="background:#18a7d6"></span>자리 출입점(하늘) <span style="background:#ffcc00"></span>앉는 자리(노랑, 고정) <span style="background:#3cb371"></span>쉬러 가는 곳(초록)</span><br>
+  점을 끌어서 옮기세요. 출입점·쉬러 가는 곳은 가장 가까운 길목과 자동으로 이어집니다(점선). 다 고치면 <b>텔레그램으로 보내기</b>를 누르고 전송만 해 주세요.
+</div>
+<div id="wrap"><svg id="sv" viewBox="0 0 1672 941"></svg><textarea id="out" readonly></textarea></div>
+<script>
+(async function(){
+const NM={boss:'원장실',herb:'약재·처방',edu:'학술·강의',ctl:'총괄관제',col:'칼럼·홍보',ops:'운영지원',news:'소식·모니터링',vid:'영상·만화',diet:'린다이어트',tang:'원외탕전'};
+const src=await (await fetch('../office-life.js?t='+Date.now())).text();
+const J=re=>JSON.parse(src.match(re)[1]);
+const CFG=J(/const CFG = (\{.*?\});\n/), HUB0=J(/const HUB = (\{.*?\});/), EDG0=J(/const EDGES = (\[.*?\]);/), OUT0=J(/const OUTINGS = (\[.*?\]);/), BO0=J(/const BOSS_OUT = (\{.*?\});/), SOFA0=J(/const SOFA = (\{.*?\});/);
+const init=()=>({hub:JSON.parse(JSON.stringify(HUB0)),edges:JSON.parse(JSON.stringify(EDG0)),stand:Object.fromEntries(Object.entries(CFG).map(([k,v])=>[k,v.stand.slice(0,2)])),
+  out:OUT0.map(o=>o.slice()),boss:JSON.parse(JSON.stringify(BO0)),sofa:JSON.parse(JSON.stringify(SOFA0))});
+let S=init(); const hist=[]; const push=()=>{hist.push(JSON.stringify(S)); if(hist.length>60)hist.shift();};
+const seat=Object.fromEntries(Object.entries(CFG).map(([k,v])=>{const t=v.seat.type1;return [k,[t[0]+t[2]*0.42,t[1]+t[2]]];}));
+const sv=document.getElementById('sv'); const NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||sv).appendChild(e);return e;};
+let mode='move', linkA=null, drag=null;
+// 모든 점 목록: [종류, 키, 좌표배열 참조]
+const pts=()=>{const L=[];for(const k in S.hub)L.push(['hub',k,S.hub[k]]);for(const k in S.stand)L.push(['stand',k,S.stand[k]]);S.out.forEach((o,i)=>L.push(['out',i,o]));for(const k of ['tea','coffee','exit'])if(S.boss[k])L.push(['boss',k,S.boss[k]]);for(const k in S.sofa)L.push(['sofa',k,S.sofa[k].walk]);return L;};
+const near=p=>Object.keys(S.hub).reduce((b,k)=>b==null||Math.hypot(S.hub[k][0]-p[0],S.hub[k][1]-p[1])<Math.hypot(S.hub[b][0]-p[0],S.hub[b][1]-p[1])?k:b,null);
+function route(a,b){const H=S.hub,s=near(a),t=near(b);if(!s||!t)return[a,b];const dist={[s]:0},prev={},todo=new Set(Object.keys(H));
+  while(todo.size){let u=null;for(const k of todo)if(dist[k]!=null&&(u==null||dist[k]<dist[u]))u=k;if(u==null||u===t)break;todo.delete(u);
+    for(const [x,y] of S.edges){const v=x===u?y:y===u?x:null;if(!v||!todo.has(v))continue;const d=dist[u]+Math.hypot(H[u][0]-H[v][0],H[u][1]-H[v][1]);if(dist[v]==null||d<dist[v]){dist[v]=d;prev[v]=u;}}}
+  if(dist[t]==null)return[a,b];const path=[];let k=t;while(k){path.unshift(H[k]);k=prev[k];}return [a,...path,b];}
+const who=document.getElementById('who'),dest=document.getElementById('dest');
+who.innerHTML='<option value="">(선택)</option>'+Object.keys(CFG).map(k=>`<option value="${k}">${NM[k]||k}</option>`).join('');
+const fillDest=()=>{dest.innerHTML=S.out.map((o,i)=>`<option value="o${i}">${o[2]}</option>`).join('')+(who.value==='boss'?'<option value="btea">약재실 차</option><option value="bcoffee">원외탕전 커피</option>':'');};
+who.onchange=()=>{fillDest();draw();};dest.onchange=draw;fillDest();
+function draw(){sv.innerHTML='';el('image',{href:'office_empty.webp',x:0,y:0,width:1672,height:941});el('rect',{x:0,y:0,width:1672,height:941,fill:'rgba(255,255,255,.12)'});
+  for(const [a,b] of S.edges){if(!S.hub[a]||!S.hub[b])continue;const l=el('line',{x1:S.hub[a][0],y1:S.hub[a][1],x2:S.hub[b][0],y2:S.hub[b][1],stroke:'#e0399a','stroke-width':5,'stroke-linecap':'round',opacity:.85});l.dataset.e=a+'|'+b;}
+  for(const [t,k,p] of pts()){if(t==='hub')continue;const h=near(p);if(h)el('line',{x1:p[0],y1:p[1],x2:S.hub[h][0],y2:S.hub[h][1],stroke:t==='stand'?'#18a7d6':'#3cb371','stroke-width':2.5,'stroke-dasharray':'6 5'});}
+  for(const k in seat){const s=seat[k],p=S.stand[k];el('line',{x1:s[0],y1:s[1],x2:p[0],y2:p[1],stroke:'#ffcc00','stroke-width':2,'stroke-dasharray':'3 4'});el('rect',{x:s[0]-7,y:s[1]-7,width:14,height:14,fill:'#ffcc00',stroke:'#7a5c00','stroke-width':1.5});}
+  if(who.value&&dest.value){const st=S.stand[who.value];const d=dest.value;const tg=d[0]==='o'?S.out[+d.slice(1)]:S.boss[d.slice(1)];if(st&&tg){const r=route(st,tg);el('polyline',{points:r.map(p=>p.join(',')).join(' '),fill:'none',stroke:'#ff7a00','stroke-width':7,'stroke-linejoin':'round',opacity:.9});}}
+  for(const [t,k,p] of pts()){const col={hub:'#e0399a',stand:'#18a7d6',out:'#3cb371',boss:'#3cb371',sofa:'#3cb371'}[t];const c=el('circle',{cx:p[0],cy:p[1],r:t==='hub'?9:11,fill:col,stroke:linkA===k&&t==='hub'?'#000':'#fff','stroke-width':linkA===k&&t==='hub'?4:2.5,style:'cursor:pointer'});c.dataset.t=t;c.dataset.k=k;
+    const lab=t==='hub'?k:t==='stand'?(NM[k]||k):t==='out'?S.out[k][2]:t==='boss'?({tea:'원장 차',coffee:'원장 커피',exit:'원장 출구'}[k]):('소파 '+(k==='sofaL'?'왼쪽':'오른쪽'));
+    el('text',{x:p[0]+12,y:p[1]-9,'font-size':t==='hub'?15:16,fill:col}).textContent=lab;}
+}
+const P=e=>{const pt=sv.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(sv.getScreenCTM().inverse());return [Math.round(q.x),Math.round(q.y)];};
+const findPt=(t,k)=>pts().find(x=>x[0]===t&&String(x[1])===String(k));
+sv.addEventListener('pointerdown',e=>{const tg=e.target;const p=P(e);
+  if(tg.tagName==='circle'){const t=tg.dataset.t,k=tg.dataset.k;
+    if(mode==='move'){push();drag=findPt(t,k);sv.setPointerCapture(e.pointerId);return;}
+    if(mode==='del'&&t==='hub'){push();delete S.hub[k];S.edges=S.edges.filter(([a,b])=>a!==k&&b!==k);draw();return;}
+    if(mode==='link'&&t==='hub'){if(!linkA){linkA=k;draw();return;}if(linkA!==k){push();const i=S.edges.findIndex(([a,b])=>(a===linkA&&b===k)||(a===k&&b===linkA));if(i>=0)S.edges.splice(i,1);else S.edges.push([linkA,k]);}linkA=null;draw();return;}
+    return;}
+  if(mode==='link'&&tg.tagName==='line'&&tg.dataset.e){push();const [a,b]=tg.dataset.e.split('|');S.edges=S.edges.filter(x=>!(x[0]===a&&x[1]===b));draw();return;}
+  if(mode==='add'){push();let n=1;while(S.hub['N'+n])n++;S.hub['N'+n]=p;draw();}
+});
+sv.addEventListener('pointermove',e=>{if(!drag)return;const p=P(e);drag[2][0]=p[0];drag[2][1]=p[1];draw();});
+sv.addEventListener('pointerup',()=>{drag=null;});
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;linkA=null;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));draw();});
+document.getElementById('undo').onclick=()=>{if(hist.length){S=JSON.parse(hist.pop());draw();}};
+document.getElementById('reset').onclick=()=>{if(confirm('처음 상태로 되돌릴까요?')){push();S=init();draw();}};
+const payload=()=>{const r=a=>a.map(v=>Math.round(v));return JSON.stringify({hub:Object.fromEntries(Object.entries(S.hub).map(([k,v])=>[k,r(v)])),edges:S.edges,stand:Object.fromEntries(Object.entries(S.stand).map(([k,v])=>[k,r(v)])),out:S.out.map(o=>[Math.round(o[0]),Math.round(o[1])]),boss:{tea:r(S.boss.tea.slice(0,2)),coffee:r(S.boss.coffee.slice(0,2))},sofa:Object.fromEntries(Object.entries(S.sofa).map(([k,v])=>[k,r(v.walk)]))});};
+document.getElementById('copy').onclick=async()=>{const t='[운영실 경로] '+payload();const o=document.getElementById('out');o.style.display='block';o.value=t;try{await navigator.clipboard.writeText(t);alert('복사했어요. 텔레그램 Aside 대화에 붙여넣어 보내 주세요.');}catch{o.select();}};
+document.getElementById('send').onclick=()=>{const t='[운영실 경로] '+payload();window.open('https://t.me/Camelliagrove_kmcbot?text='+encodeURIComponent(t),'_blank');};
+draw();
+})();
+</script></body></html>
