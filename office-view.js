@@ -136,7 +136,7 @@
   const animLayer = (o, A, ver) => {
     let prev = {}; try { prev = JSON.parse(localStorage.getItem('of.prevStates') || 'null') || null; } catch { prev = null; }
     const html = [], moves = [];
-    for (const d of o.depts) { const s = SEAT[d.id]; if (!s) continue; const work = d.boss || d.status === '일하는 중';
+    for (const d of o.depts) { const s = SEAT[d.id]; if (!s) continue; if (window.OF_LIFE && OF_LIFE.has(d.id)) continue; const work = d.boss || d.status === '일하는 중';
       html.push(`<img class="of-seat${work ? ' on' : ''}" data-seat="${d.id}" onerror="this.remove()" src="${A}seats/seat_${d.id}.webp${ver}" alt="" style="left:${pct(s[0], OFW)};top:${pct(s[1], OFH)};width:${pct(s[2] - s[0], OFW)};height:${pct(s[3] - s[1], OFH)}">`);
       if (d.boss) continue; const L = LOUNGE[d.id]; if (!L) continue;
       const was = prev ? (prev[d.id] === '일하는 중') : null; const ar = ASPECT[d.id] || 0.7;
@@ -243,6 +243,7 @@
     el.querySelectorAll('[data-dept]').forEach(b => b.onclick = e => { e.stopPropagation(); deptPanel(b.dataset.dept); });
     el.querySelectorAll('.of-tag:not(.boss)').forEach((t, i) => { const d = o.depts.filter(x => !x.boss)[i]; if (d) { t.style.cursor = 'pointer'; t.onclick = () => deptPanel(d.id); } });
     if (AN && AN.moves.length) runMoves(el, AN.moves);
+    if (AN && window.OF_LIFE) { try { OF_LIFE.mount(el.querySelector('.of-stage'), o, A, AV2); } catch (e) { console.warn('life', e); } }
     el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { window.__ofFull = !window.__ofFull; window.renderOffice(el, o, opt); });
     if (!window.__ofEsc) { window.__ofEsc = true; document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.__ofFull && !document.querySelector('.of-modal')) { window.__ofFull = false; window.__ofLast && window.renderOffice(...window.__ofLast); } }); }
     window.__ofLast = [el, o, opt];
