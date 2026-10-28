@@ -158,6 +158,8 @@
     ensureCss();
     if (!o || !o.depts) { el.innerHTML = '<div class="of"><div class="of-card">운영실 데이터가 아직 없어요. 다음 갱신(매시 정각) 뒤에 보여요.</div></div>'; return; }
     const det = !!opt.detail, c = o.counts || {};
+    if (!window.OF_TODO_API && o.boss) { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); for (const [t, d] of Object.entries(L)) { const B = o.boss; const inOpen = (B.todos || []).findIndex(x => x.text === t); const inDone = (B.done || []).findIndex(x => x.text === t); if (d && inOpen >= 0) { const x = B.todos.splice(inOpen, 1)[0]; x.doneAt = d; (B.done = B.done || []).unshift(x); } else if (!d && inDone >= 0) { const x = B.done.splice(inDone, 1)[0]; delete x.doneAt; B.todos.push(x); } } }
+    /*boss-sync*/ if (o.boss && Array.isArray(o.boss.todos)) { c.todos = o.boss.todos.length; if (Array.isArray(o.boss.approvals)) c.approvals = o.boss.approvals.length; const bd = (o.depts || []).find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
     const A = opt.assets || 'office/', AV2 = opt.assetVer || ''; const AN = opt.anim !== false && !!(opt.anim || window.OF_ANIM) ? animLayer(o, A, AV2) : null;
     const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(AN ? (opt.emptyBg || (A + 'office_empty.webp' + AV2)) : (opt.bg || 'office/office_bg.webp'))}" alt="AI 동백숲한의원 운영실"${AN ? ` onerror="this.onerror=null;this.parentNode.classList.add('of-noanim');this.src='${esc(opt.bg || 'office/office_bg.webp')}'"` : ''}>${AN ? '<div class="of-anim">' + AN.html + '</div>' : ''}
@@ -202,7 +204,6 @@
       if (window.OF_TODO_API) { try { const r = await fetch(window.OF_TODO_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, done }) }); if (!r.ok) throw new Error(r.status); } catch (e) { alert('할 일 파일 저장 실패: ' + e); } }
       else { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); L[text] = done ? today : null; localStorage.setItem('of.todoLocal', JSON.stringify(L)); }
     };
-    if (!window.OF_TODO_API && o.boss) { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); for (const [t, d] of Object.entries(L)) { const B = o.boss; const inOpen = (B.todos || []).findIndex(x => x.text === t); const inDone = (B.done || []).findIndex(x => x.text === t); if (d && inOpen >= 0) { const x = B.todos.splice(inOpen, 1)[0]; x.doneAt = d; (B.done = B.done || []).unshift(x); } else if (!d && inDone >= 0) { const x = B.done.splice(inDone, 1)[0]; delete x.doneAt; B.todos.push(x); } } }
     const askBox = (k) => `<div class="of-ask"><div class="of-ask-h">💬 Aside에게 보내기 <span>${k === 'appr' ? '승인·보류·수정 요청을 적어 주세요' : '할 일에 대한 질문이나 지시를 적어 주세요'}</span></div>
       <div class="of-ask-row"><textarea rows="2" placeholder="${k === 'appr' ? '예) 화병 쇼츠 게시 승인 / 발목 염좌 쇼츠는 다음 주로 보류' : '예) 카톡 요약은 손가변증 방 빼고 매일 밤 9시로 해줘'}"></textarea><button class="of-ask-send">보내기</button></div>
       <div class="of-sub">텔레그램이 열리고 메시지가 채워져요. 텔레그램에서 '보내기'를 누르면 Aside가 받아서 처리해요.</div></div>`;
