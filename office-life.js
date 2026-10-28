@@ -42,6 +42,16 @@
   .lf .lf-say{position:absolute;transform:translate(-50%,-100%);background:#fff;border:1px solid #d9e7dd;color:#1f6b43;font-weight:700;border-radius:10px;padding:2px 8px;font-size:11px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12)}
   @keyframes lfPop{0%{transform:translate(-50%,-80%) scale(.4)}70%{transform:translate(-50%,-105%) scale(1.15)}100%{transform:translate(-50%,-100%) scale(1)}}
   .lf .lf-sign{position:absolute;transform:translate(-50%,-100%);background:#2b2a26;color:#f3d9a4;font-weight:800;border-radius:8px;padding:2px 9px;font-size:12px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .lf .lf-wind{position:absolute;transform:translate(-50%,-50%);pointer-events:none;z-index:4;aspect-ratio:1.6}
+  .lf .lf-wind i{position:absolute;border-radius:50%;border:0 solid transparent;border-top:3px solid #fff;filter:drop-shadow(0 0 1.5px #3d8fd6) drop-shadow(0 0 3px rgba(80,160,240,.8));opacity:0;animation:lfSw .42s linear infinite}
+  .lf .lf-wind i:nth-child(1){left:2%;top:12%;width:46%;height:70%;transform:rotate(-35deg)}
+  .lf .lf-wind i:nth-child(2){left:50%;top:6%;width:46%;height:70%;transform:rotate(30deg);animation-delay:.14s}
+  .lf .lf-wind i:nth-child(3){left:22%;top:34%;width:56%;height:62%;transform:rotate(180deg);animation-delay:.28s}
+  .lf .lf-wind b{position:absolute;height:3px;width:26%;border-radius:2px;background:#fff;box-shadow:0 0 2px #3d8fd6,0 0 4px rgba(80,160,240,.8);opacity:0;animation:lfDash .3s linear infinite}
+  .lf .lf-wind b:nth-of-type(1){left:-14%;top:40%;animation-delay:.05s}.lf .lf-wind b:nth-of-type(2){right:-14%;top:30%;animation-delay:.2s;animation-name:lfDashR}.lf .lf-wind b:nth-of-type(3){right:-8%;top:62%;animation-delay:.12s;animation-name:lfDashR}
+  @keyframes lfSw{0%{opacity:0;clip-path:inset(0 70% 0 0)}25%{opacity:1}100%{opacity:0;clip-path:inset(0 0 0 0)}}
+  @keyframes lfDash{0%{opacity:0;transform:translateX(30%)}30%{opacity:1}100%{opacity:0;transform:translateX(-60%)}}
+  @keyframes lfDashR{0%{opacity:0;transform:translateX(-30%)}30%{opacity:1}100%{opacity:0;transform:translateX(60%)}}
   @media (max-width:640px){.lf .lf-z,.lf .lf-say{display:none}}`;
   function ensureCss() { if (document.getElementById('lf-css')) return; const s = document.createElement('style'); s.id = 'lf-css'; s.textContent = css; document.head.appendChild(s); }
 
@@ -54,6 +64,8 @@
     const walk = mk('lf-walk', 5);
     const zz = document.createElement('div'); zz.className = 'lf-z'; zz.innerHTML = '<span>Z</span><span>z</span><span>z</span>'; zz.style.display = 'none'; box.appendChild(zz);
     const fx = document.createElement('div'); fx.style.cssText = 'position:absolute;inset:0;z-index:6'; box.appendChild(fx);
+    const wind = document.createElement('div'); wind.className = 'lf-wind'; wind.innerHTML = '<i></i><i></i><i></i><b></b><b></b><b></b>'; wind.style.display = 'none'; box.appendChild(wind);
+    const windOn = on => { if (!on) { wind.style.display = 'none'; return; } const t = cfg.seat.type1, wpx = t[2] * 0.87; wind.style.left = P(t[0] + wpx * 0.53, W0); wind.style.top = P(t[1] + t[2] * 0.82, H0); wind.style.width = P(wpx * 0.85, W0); wind.style.display = ''; };
     const has = k => !!cfg.seat[k];
     const frames = {}; const WN = WALKN[id] || 4, WK = Array.from({ length: WN }, (_, i) => 'walk' + (i + 1)), FACEL = FACE_LEFT.includes(id);
     for (const k of [...Object.keys(cfg.seat), ...WK, ...(cfg.boss ? ['tea', 'coffee'] : [])]) { const im = new Image(); im.src = A + cfg.dir + k + '.webp' + ver; frames[k] = im.src; }
@@ -69,7 +81,7 @@
       const [l, t, h] = cfg.seat[k]; const im = new Image(); im.src = frames[k];
       const set = () => { const w = h * (im.naturalWidth / im.naturalHeight || 1); pose.src = frames[k]; pose.style.left = P(l, W0); pose.style.top = P(t, H0); pose.style.height = P(h, H0); pose.style.width = P(w, W0); pose.style.zIndex = cfg.above.includes(k) ? 3 : 1; pose.style.display = ''; pose.style.opacity = 1; };
       im.complete ? set() : (im.onload = set);
-      walk.style.display = 'none';
+      walk.style.display = 'none'; windOn(false);
       const sleepy = k === 'sleep' || k === 'doze'; zz.style.display = sleepy ? '' : 'none';
       if (sleepy) { zz.style.left = P(l + h * 0.75, W0); zz.style.top = P(t - 6, H0); }
     }
@@ -106,7 +118,8 @@
     // 일하는 중: 타이핑 (원장님은 다다다 빠르게) + 가끔 기지개
     function workLoop() { if (mode !== 'work' || busy || away) return; let n = 0; const fast = cfg.boss;
       if (cfg.boss && clinic) { sit('type1'); later(() => { if (busy) return; clear(); bossBreak(); }, rnd(75000, 150000)); return; }
-      const tick = () => { if (mode !== 'work' || busy || away) return; sit(n++ % 2 ? 'type2' : 'type1'); later(tick, fast ? rnd(90, 170) : rnd(260, 620)); }; tick();
+      const tick = () => { if (mode !== 'work' || busy || away) return; sit(n++ % 2 ? 'type2' : 'type1'); later(tick, rnd(260, 620)); };
+      if (fast) { sit('type1'); windOn(true); } else tick();
       if (cfg.boss) { later(() => { if (busy || away) return; clear(); bossBreak(); }, rnd(75000, 150000)); return; }
       if (has('stretch')) later(() => { if (mode !== 'work' || busy) return; busy = true; clear(); sit('stretch'); later(() => { busy = false; workLoop(); }, 1800); }, rnd(14000, 26000)); }
     // 원장님 쉬는 시간: 엎드려 쉬기 / 약재실 차 / 원외탕전 커피
