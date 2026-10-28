@@ -105,6 +105,7 @@
 
     // 일하는 중: 타이핑 (원장님은 다다다 빠르게) + 가끔 기지개
     function workLoop() { if (mode !== 'work' || busy || away) return; let n = 0; const fast = cfg.boss;
+      if (cfg.boss && clinic) { sit('type1'); later(() => { if (busy) return; clear(); bossBreak(); }, rnd(75000, 150000)); return; }
       const tick = () => { if (mode !== 'work' || busy || away) return; sit(n++ % 2 ? 'type2' : 'type1'); later(tick, fast ? rnd(90, 170) : rnd(260, 620)); }; tick();
       if (cfg.boss) { later(() => { if (busy || away) return; clear(); bossBreak(); }, rnd(75000, 150000)); return; }
       if (has('stretch')) later(() => { if (mode !== 'work' || busy) return; busy = true; clear(); sit('stretch'); later(() => { busy = false; workLoop(); }, 1800); }, rnd(14000, 26000)); }
@@ -115,24 +116,21 @@
       else trip(BOSS_OUT.coffee, frames.coffee, workLoop); }
     // 직원 쉬는 중: 엎드려 자기 / 졸기 / 기지개 / 잠깐 산책
     function restLoop() { if (mode !== 'rest' || busy) return; const r = Math.random();
-      if (r < 0.45) { sit('sleep'); later(restLoop, rnd(14000, 26000)); }
-      else if (r < 0.82) { sit('doze'); later(restLoop, rnd(12000, 22000)); }
-      else if (r < 0.93) { sit('stretch'); later(() => { sit('type1'); later(restLoop, rnd(3000, 6000)); }, 1900); }
-      else { const free = OUTINGS.filter(o => !TAKEN.has(o[2])); if (!free.length) { sit('doze'); later(restLoop, rnd(12000, 22000)); } else trip(pick(free), null, () => { sit('doze'); later(restLoop, rnd(8000, 14000)); }); } }
-
-    // 원장님: 30분 지시 없으면 "진료중" 말풍선 띄우고 자리 비우기
-    let sign = null;
+      if (r < 0.55) { sit('type1'); later(restLoop, rnd(10000, 20000)); }
+      else if (r < 0.8) { let n = 0, m = Math.floor(rnd(6, 14)); const slow = () => { if (mode !== 'rest' || busy) return; sit(n++ % 2 ? 'type2' : 'type1'); if (n < m) later(slow, rnd(500, 900)); else later(restLoop, rnd(6000, 12000)); }; slow(); }
+      else if (r < 0.93) { sit('stretch'); later(() => { sit('type1'); later(restLoop, rnd(6000, 12000)); }, 1900); }
+      else { const free = OUTINGS.filter(o => !TAKEN.has(o[2])); if (!free.length) { sit('type1'); later(restLoop, rnd(12000, 22000)); } else trip(pick(free), null, () => { sit('type1'); later(restLoop, rnd(8000, 14000)); }); } }
+    // 원장님: 30분 지시 없으면 머리 위에 "진료중" 팻말 (자리는 그대로, 타자 멈춤)
+    let sign = null, clinic = false;
     const idleMs = () => Date.now() - (Date.parse(window.__ofBossLastAt || bossLastAt || 0) || 0);
-    function leave() { if (away) return; away = true; clear(); busy = true; sit('type1'); { const t = cfg.seat.type1; bubble('lf-say', '진료 보러 갑니다', [t[0] + t[2] * 0.8, t[1] + t[2] * 0.25], 2600); }
-      later(() => walkTo(S, BOSS_OUT.exit, () => { walk.style.transition = 'opacity .8s'; walk.style.opacity = 0; later(() => { walk.style.display = 'none'; walk.style.transition = ''; busy = false; showSign(); }, 850); }), 2200); }
-    function showSign() { if (sign) return; const t = cfg.seat.type1; sign = bubble('lf-sign', '진료중', [t[0] + t[2] * 0.42, t[1] + t[2] * 0.35]); }
-    function comeBack() { if (!away) return; away = false; clear(); if (sign) { sign.remove(); sign = null; } busy = true; walk.style.opacity = 1;
-      walkTo(BOSS_OUT.exit, S, () => { busy = false; mode = 'work'; sit('type1'); say('다녀왔어요', 2000); later(workLoop, 1500); }); }
-    function bossCheck() { const idle = idleMs() > BOSS_IDLE_MS; if (idle && !away && !busy) leave(); else if (!idle && away) comeBack(); }
+    function showSign() { if (sign) return; const t = cfg.seat.type1; sign = bubble('lf-sign', '진료중', [t[0] + t[2] * 1.05, t[1] + t[2] * 0.3]); }
+    function bossCheck() { const idle = idleMs() > BOSS_IDLE_MS; if (idle === clinic) return; clinic = idle;
+      if (clinic) { showSign(); if (!busy) { clear(); sit('type1'); workLoop(); } }
+      else { if (sign) { sign.remove(); sign = null; } if (!busy) { clear(); say('다녀왔어요', 2000); later(workLoop, 1200); } } }
 
-    function start() { clear(); busy = false; if (reduce) { sit(mode === 'work' ? 'type1' : 'doze'); return; } mode === 'work' ? workLoop() : restLoop(); }
+    function start() { clear(); busy = false; if (reduce) { sit('type1'); return; } mode === 'work' ? workLoop() : restLoop(); }
 
-    const poke = () => { if (away) { say('진료 중이에요', 2000, [cfg.seat.type1[0] + cfg.seat.type1[2] * 0.42, cfg.seat.type1[1]]); return; }
+    const poke = () => {
       if (busy && walk.style.display !== 'none') { bang([parseFloat(walk.style.left) / 100 * W0, parseFloat(walk.style.top) / 100 * H0 - hAt(parseFloat(walk.style.top) / 100 * H0) - 6]); return; }
       clear(); busy = true; sit('startle'); bang();
       later(() => { busy = false; if (mode === 'rest') { sit('type1'); say(label ? label + ' 여기 있어요!' : '깼어요!', 2200); later(() => { sit('type2'); later(restLoop, 2600); }, 700); } else workLoop(); }, 1400); };
@@ -140,9 +138,9 @@
     walk.addEventListener('click', e => { e.stopPropagation(); poke(); });
 
     let iv = 0;
-    if (cfg.boss) { mode = 'work'; if (idleMs() > BOSS_IDLE_MS) { away = true; showSign(); } else start(); iv = setInterval(() => alive && bossCheck(), 20000); }
+    if (cfg.boss) { mode = 'work'; clinic = idleMs() > BOSS_IDLE_MS; if (clinic) showSign(); start(); iv = setInterval(() => alive && bossCheck(), 20000); }
     else start();
-    const outing = (i) => { if (busy || away) return; clear(); const o = OUTINGS[i ?? Math.floor(Math.random() * OUTINGS.length)]; trip(o, null, () => { sit('doze'); later(restLoop, rnd(8000, 14000)); }); };
+    const outing = (i) => { if (busy) return; clear(); const o = OUTINGS[i ?? Math.floor(Math.random() * OUTINGS.length)]; trip(o, null, () => { sit('type1'); later(restLoop, rnd(8000, 14000)); }); };
     return { outing, bossBreak: k => { if (!cfg.boss || busy || away) return; clear(); k === 'sleep' ? (sit('sleep'), later(() => { sit('type1'); later(workLoop, 1200); }, 8000)) : trip(BOSS_OUT[k], frames[k], workLoop); }, check: bossCheck,
       setMode(w) { if (cfg.boss) return; const m = w ? 'work' : 'rest'; if (m === mode) return; mode = m; start(); }, destroy() { alive = false; clear(); clearInterval(iv); box.remove(); } };
   }
