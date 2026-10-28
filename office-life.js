@@ -13,6 +13,8 @@
   const EDGES = [["H1","H2"],["H2","H3"],["H1","H3"],["H3","H10"],["H10","H12"],["H12","H5"],["H5","H4"],["H4","H14"],["H12","H6"],["H6","H13"],["H13","H7"],["H7","H8"],["H5","H8"],["H8","H9"]];
   const OUTINGS = [[560,385,"창밖 구경"],[880,318,"화이트보드"],[930,580,"수다"],[330,742,"소파에서 차 한잔"],[1440,730,"물 한잔"]];
   const BOSS_OUT = {"tea":[560,385,"약재실에서 차 한잔"],"coffee":[1440,730,"원외탕전실 커피"],"exit":[330,490]};
+  const WALKN = { diet: 2 };          // 걷기 프레임 수 (기본 4: 왼발-모음-오른발-모음)
+  const FACE_LEFT = ['edu'];         // 걷기 그림이 왼쪽을 보는 캐릭터
   const BOSS_IDLE_MS = 30 * 60e3;   // 지시 없이 30분 → 진료중
   const depth = y => 0.7 + 0.5 * y / H0;
   // 통로 길찾기: 가장 가까운 통로점끼리 최단 경로
@@ -51,7 +53,8 @@
     const zz = document.createElement('div'); zz.className = 'lf-z'; zz.innerHTML = '<span>Z</span><span>z</span><span>z</span>'; zz.style.display = 'none'; box.appendChild(zz);
     const fx = document.createElement('div'); fx.style.cssText = 'position:absolute;inset:0;z-index:6'; box.appendChild(fx);
     const has = k => !!cfg.seat[k];
-    const frames = {}; for (const k of [...Object.keys(cfg.seat), 'walk1', 'walk2', ...(cfg.boss ? ['tea', 'coffee'] : [])]) { const im = new Image(); im.src = A + cfg.dir + k + '.webp' + ver; frames[k] = im.src; }
+    const frames = {}; const WN = WALKN[id] || 4, WK = Array.from({ length: WN }, (_, i) => 'walk' + (i + 1)), FACEL = FACE_LEFT.includes(id);
+    for (const k of [...Object.keys(cfg.seat), ...WK, ...(cfg.boss ? ['tea', 'coffee'] : [])]) { const im = new Image(); im.src = A + cfg.dir + k + '.webp' + ver; frames[k] = im.src; }
     const standSrc = A + cfg.standImg + ver;
     const S = cfg.boss ? [cfg.stand[0], cfg.stand[1], cfg.stand[2] * 1.3] : cfg.stand, hAt = y => S[2] * depth(y) / depth(S[1]);
     let timers = [], mode = working ? 'work' : 'rest', busy = false, alive = true, away = false, raf = 0;
@@ -76,10 +79,10 @@
     function walkPath(pts, done) {
       pose.style.display = 'none'; zz.style.display = 'none'; walk.style.display = ''; walk.style.opacity = 1;
       let seg = 0, f = -1;
-      const go = () => { if (seg >= pts.length - 1) { done && done(); return; } const a = pts[seg], b = pts[seg + 1]; const dur = Math.max(500, Math.hypot(b[0] - a[0], b[1] - a[1]) / 80 * 1000); walk.classList.toggle('flip', b[0] < a[0]); const t0 = performance.now();
+      const go = () => { if (seg >= pts.length - 1) { done && done(); return; } const a = pts[seg], b = pts[seg + 1]; const dur = Math.max(500, Math.hypot(b[0] - a[0], b[1] - a[1]) / 80 * 1000); walk.classList.toggle('flip', FACEL ? b[0] > a[0] : b[0] < a[0]); const t0 = performance.now();
         const step = () => { if (!alive) return; const now = performance.now(); const t = Math.min(1, (now - t0) / dur); const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
           walk.style.left = P(x, W0); walk.style.top = P(y, H0); walk.style.height = P(hAt(y), H0);
-          const nf = Math.floor(now / 230) % 2; if (nf !== f) { f = nf; walk.src = frames[f ? 'walk2' : 'walk1']; }
+          const nf = Math.floor(now / (WN === 4 ? 170 : 230)) % WN; if (nf !== f) { f = nf; walk.src = frames[WK[f]]; }
           if (t < 1) raf = requestAnimationFrame(step); else { seg++; go(); } }; raf = requestAnimationFrame(step); };
       go();
     }
