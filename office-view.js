@@ -98,7 +98,7 @@
   @keyframes ofHop{0%,86%,100%{margin-top:0}90%{margin-top:-5px}95%{margin-top:0}}
   @media (prefers-reduced-motion:reduce){.of-bub,.of-tag.w,.of-glow,.of-zz span,.of-bub .dots i{animation:none}}
   @media (max-width:640px){.of-bub{font-size:9px;padding:1px 6px;transform:translate(-50%,calc(-100% - 26px));max-width:120px}.of-zz{display:none}.of-glow{width:9%}}
-  .of-anim{position:absolute;inset:0;pointer-events:none;z-index:1}
+  .of-anim{position:absolute;inset:0;pointer-events:none;z-index:1}.of-noanim .of-anim{display:none}.of-stage>img{min-height:120px}
   .of-seat{position:absolute;opacity:0;transition:opacity .7s ease}.of-seat.on{opacity:1;animation:ofBob 3.2s ease-in-out infinite}
   .of-sp{position:absolute;transform:translate(-50%,-100%);transition:left 3s linear,top 3s linear,height 3s linear,opacity .6s ease;filter:drop-shadow(0 4px 3px rgba(60,40,10,.25))}
   .of-sp.walk{animation:ofWalk .42s ease-in-out infinite}
@@ -137,13 +137,13 @@
     let prev = {}; try { prev = JSON.parse(localStorage.getItem('of.prevStates') || 'null') || null; } catch { prev = null; }
     const html = [], moves = [];
     for (const d of o.depts) { const s = SEAT[d.id]; if (!s) continue; const work = d.boss || d.status === '일하는 중';
-      html.push(`<img class="of-seat${work ? ' on' : ''}" data-seat="${d.id}" src="${A}seats/seat_${d.id}.webp${ver}" alt="" style="left:${pct(s[0], OFW)};top:${pct(s[1], OFH)};width:${pct(s[2] - s[0], OFW)};height:${pct(s[3] - s[1], OFH)}">`);
+      html.push(`<img class="of-seat${work ? ' on' : ''}" data-seat="${d.id}" onerror="this.remove()" src="${A}seats/seat_${d.id}.webp${ver}" alt="" style="left:${pct(s[0], OFW)};top:${pct(s[1], OFH)};width:${pct(s[2] - s[0], OFW)};height:${pct(s[3] - s[1], OFH)}">`);
       if (d.boss) continue; const L = LOUNGE[d.id]; if (!L) continue;
       const was = prev ? (prev[d.id] === '일하는 중') : null; const ar = ASPECT[d.id] || 0.7;
       const from = was === null ? (work ? L : null) : (was !== work ? (was ? seatFeet(d.id) : L) : null);
       const to = work ? seatFeet(d.id) : L; const start = from || to;
       const hh = from && work ? L[2] : (work ? seatFeet(d.id)[2] : L[2]);
-      html.push(`<img class="of-sp${!work && !from ? ' idle' : ''}" data-sp="${d.id}" src="${A}sprites/stand_${d.id}.webp${ver}" alt="" style="left:${pct(start[0], OFW)};top:${pct(start[1], OFH)};height:${pct(hh, OFH)};aspect-ratio:${ar};opacity:${(work && !from) ? 0 : 1}">`);
+      html.push(`<img class="of-sp${!work && !from ? ' idle' : ''}" data-sp="${d.id}" onerror="this.remove()" src="${A}sprites/stand_${d.id}.webp${ver}" alt="" style="left:${pct(start[0], OFW)};top:${pct(start[1], OFH)};height:${pct(hh, OFH)};aspect-ratio:${ar};opacity:${(work && !from) ? 0 : 1}">`);
       if (from) moves.push({ id: d.id, to, work, h: work ? seatFeet(d.id)[2] * 0.9 : L[2] });
     }
     try { localStorage.setItem('of.prevStates', JSON.stringify(Object.fromEntries(o.depts.map(d => [d.id, d.status])))); } catch {}
@@ -160,7 +160,7 @@
     const det = !!opt.detail, c = o.counts || {};
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
     const A = opt.assets || 'office/', AV2 = opt.assetVer || ''; const AN = opt.anim !== false && !!(opt.anim || window.OF_ANIM) ? animLayer(o, A, AV2) : null;
-    const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(AN ? (opt.emptyBg || (A + 'office_empty.webp' + AV2)) : (opt.bg || 'office/office_bg.webp'))}" alt="AI 동백숲한의원 운영실">${AN ? '<div class="of-anim">' + AN.html + '</div>' : ''}
+    const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(AN ? (opt.emptyBg || (A + 'office_empty.webp' + AV2)) : (opt.bg || 'office/office_bg.webp'))}" alt="AI 동백숲한의원 운영실"${AN ? ` onerror="this.onerror=null;this.parentNode.classList.add('of-noanim');this.src='${esc(opt.bg || 'office/office_bg.webp')}'"` : ''}>${AN ? '<div class="of-anim">' + AN.html + '</div>' : ''}
       <div class="of-top"><b>AI 동백숲한의원 운영실</b>
         <span class="of-chip"><i class="of-dot w"></i>일하는 중 ${c.working ?? 0}</span>
         <span class="of-chip"><i class="of-dot a"></i>승인 대기 ${c.waitingDepts ?? 0}</span>
