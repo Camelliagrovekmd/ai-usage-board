@@ -201,7 +201,7 @@
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
       if (window.OF_TODO_API) {
         try { const r = await fetch(window.OF_TODO_API + '/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, deptName: dept.name, deptId: dept.id }) }); if (!r.ok) throw new Error(r.status); }
-        catch (e) { alert('할 일 저장 실패: ' + e + '\nPC 서버를 다시 켠 뒤 시도해 주세요.'); return false; }
+        catch (e) { if (confirm('PC 서버가 아직 예전 버전이라 바로 저장하지 못했어요 (' + e + ').\n대신 텔레그램으로 Aside에게 보내서 등록할까요?')) { const bot = window.OF_TG_BOT || 'Camelliagrove_kmcbot'; window.open('https://t.me/' + bot + '?text=' + encodeURIComponent('[원장실·할 일] 추가: ' + text + ' (' + dept.name + ')'), '_blank', 'noopener'); return true; } return false; }
         const B = o.boss; B.todos = B.todos || []; if (!B.todos.some(t => t.text === text)) B.todos.unshift({ text, dept: dept.id, at: today });
         try { window.renderOffice(el, o, { ...opt, openBoss: undefined }); } catch (e) {}
         return true;
