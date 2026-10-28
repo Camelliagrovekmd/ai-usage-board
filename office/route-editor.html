@@ -47,7 +47,7 @@ const sv=document.getElementById('sv'); const NS='http://www.w3.org/2000/svg';
 const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||sv).appendChild(e);return e;};
 let mode='move', linkA=null, drag=null;
 // 모든 점 목록: [종류, 키, 좌표배열 참조]
-const pts=()=>{const L=[];for(const k in S.hub)L.push(['hub',k,S.hub[k]]);for(const k in S.stand)L.push(['stand',k,S.stand[k]]);S.out.forEach((o,i)=>L.push(['out',i,o]));for(const k of ['tea','coffee','exit'])if(S.boss[k])L.push(['boss',k,S.boss[k]]);for(const k in S.sofa)L.push(['sofa',k,S.sofa[k].walk]);return L;};
+const pts=()=>{const L=[];for(const k in S.hub)L.push(['hub',k,S.hub[k]]);for(const k in S.stand)L.push(['stand',k,S.stand[k]]);S.out.forEach((o,i)=>L.push(['out',i,o]));for(const k of ['tea','coffee'])if(S.boss[k])L.push(['boss',k,S.boss[k]]);for(const k in S.sofa)L.push(['sofa',k,S.sofa[k].walk]);return L;};
 const near=p=>Object.keys(S.hub).reduce((b,k)=>b==null||Math.hypot(S.hub[k][0]-p[0],S.hub[k][1]-p[1])<Math.hypot(S.hub[b][0]-p[0],S.hub[b][1]-p[1])?k:b,null);
 function route(a,b){const H=S.hub,s=near(a),t=near(b);if(!s||!t)return[a,b];const dist={[s]:0},prev={},todo=new Set(Object.keys(H));
   while(todo.size){let u=null;for(const k of todo)if(dist[k]!=null&&(u==null||dist[k]<dist[u]))u=k;if(u==null||u===t)break;todo.delete(u);
