@@ -167,7 +167,7 @@ function renderWl(list){
   const m=$('#wlmore'); if(m) m.onclick=()=>{ wlAll=!wlAll; renderWl(list); };
 }
 function render(d){
-  try{ renderOffice($('#office'), d.office, { detail:false, usage:d.services, assetVer:'?v=1793151766427', bg:'office/office_bg.webp?v=1793101729470' }); }catch(e){ $('#office').textContent='운영실 화면 오류: '+e; }
+  try{ renderOffice($('#office'), d.office, { detail:false, usage:d.services, assetVer:'?v=1793152717360', bg:'office/office_bg.webp?v=1793101729470' }); }catch(e){ $('#office').textContent='운영실 화면 오류: '+e; }
   renderCtl(d.control);
   renderWl(d.worklog);
   $('#advice').textContent=d.advice||'';
