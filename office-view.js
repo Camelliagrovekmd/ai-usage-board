@@ -68,6 +68,7 @@
   .of-dock{position:absolute;left:0;right:0;bottom:0;height:64px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:nowrap;overflow-x:auto;padding:0 12px;background:rgba(255,253,248,.96);border-top:1px solid #eadfcb}
   .of-dock button{flex:none;border:1px solid #eadfcb;background:#fff;border-radius:14px;padding:8px 13px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;color:#2b2a26}
   .of-dock button em{font-style:normal;background:#2e8b57;color:#fff;border-radius:10px;padding:0 7px;font-size:11px}.of-dock button em.a{background:#c8463d}
+  .of-add{display:flex;gap:6px;margin:2px 0 10px}.of-add input{flex:1;min-width:0;font:inherit;font-size:14px;padding:8px 10px;border:1px solid #d9cfbd;border-radius:10px}.of-add select{font:inherit;font-size:12.5px;max-width:38%;border:1px solid #d9cfbd;border-radius:10px;padding:0 6px;background:#fff}.of-add button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:0 14px;background:#2e8b57;color:#fff;cursor:pointer}
   .of-chk{flex:none;width:22px;height:22px;border-radius:6px;border:2px solid #b9ad97;background:#fff;color:#fff;font-weight:900;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;padding:0}
   .of-chk:hover{border-color:#2e8b57}.of-todo.done .of-chk,.of-todo.checking .of-chk{background:#2e8b57;border-color:#2e8b57}
   .of-todo b{transition:color .4s}.of-todo b{background:linear-gradient(currentColor,currentColor) no-repeat 0 55%/0% 1.5px;transition:background-size .45s ease,color .4s}
@@ -190,9 +191,22 @@
     const log = `<div class="of-card"><h3>📝 작업 기록</h3>${det ? ((o.log || []).slice(0, 10).map(l => `<div class="of-log"><em>${esc(dname(o, l.dept))}</em><span>${esc(l.text)}</span></div>`).join('') || '<div class="of-empty">기록이 없어요.</div>') : lock('작업 기록')}</div>`;
     const todoHtml = B => {
       const it = (t, d) => `<div class="of-li of-todo ${d ? 'done' : ''}" data-t="${esc(t.text)}"><button class="of-chk" data-chk="${d ? 0 : 1}" aria-label="${d ? '완료 취소' : '완료'}">${d ? '✓' : ''}</button><div class="of-t"><b style="white-space:normal">${esc(t.text)}</b><span>${esc(dname(o, t.dept))}${t.at ? ' · ' + esc(t.at) + ' 등록' : ''}${d && t.doneAt ? ' · ' + esc(t.doneAt) + ' 완료' : ''}</span></div></div>`;
-      const open = (B.todos || []).map(t => it(t, false)).join('') || '<div class="of-empty">남은 할 일이 없어요. 👍</div>';
+      const addBox = det ? `<div class="of-add"><input class="of-add-t" maxlength="120" placeholder="새 할 일 (예: 우슬 구매)"><select class="of-add-d">${o.depts.map(d => `<option value="${d.id}"${d.id === (window.__ofAddDept || 'boss') ? ' selected' : ''}>${esc(d.name)}</option>`).join('')}</select><button class="of-add-b">추가</button></div>` : '';
+      const open = addBox + ((B.todos || []).map(t => it(t, false)).join('') || '<div class="of-empty">남은 할 일이 없어요. 👍</div>');
       const done = (B.done || []);
       return open + `<details class="of-donebox" ${window.__ofDoneOpen ? 'open' : ''}><summary>완료한 일 ${done.length}건</summary>${done.map(t => it(t, true)).join('') || '<div class="of-empty">아직 없어요.</div>'}</details>` + (window.OF_TODO_API ? '' : '<div class="of-lock" style="margin-top:8px">⚠ PC 서버가 꺼져 있어 체크가 이 브라우저에만 저장돼요. start.cmd를 실행하면 할 일 파일에 바로 반영돼요.</div>');
+    };
+    const addTodo = async (text, deptId) => {
+      text = (text || '').replace(/[|\r\n]+/g, ' ').trim(); if (!text) return false; const dept = o.depts.find(d => d.id === deptId) || o.depts.find(d => d.boss); window.__ofAddDept = dept.id;
+      const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+      if (window.OF_TODO_API) {
+        try { const r = await fetch(window.OF_TODO_API + '/add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, deptName: dept.name, deptId: dept.id }) }); if (!r.ok) throw new Error(r.status); }
+        catch (e) { alert('할 일 저장 실패: ' + e + '\nPC 서버를 다시 켠 뒤 시도해 주세요.'); return false; }
+        const B = o.boss; B.todos = B.todos || []; if (!B.todos.some(t => t.text === text)) B.todos.unshift({ text, dept: dept.id, at: today });
+        try { window.renderOffice(el, o, { ...opt, openBoss: undefined }); } catch (e) {}
+        return true;
+      }
+      const bot = window.OF_TG_BOT || 'Camelliagrove_kmcbot'; window.open('https://t.me/' + bot + '?text=' + encodeURIComponent('[원장실·할 일] 추가: ' + text + ' (' + dept.name + ')'), '_blank', 'noopener'); return true;
     };
     const toggleTodo = async (text, done) => {
       const B = o.boss; const from = done ? B.todos : B.done, to = done ? B.done : B.todos; const k = from.findIndex(t => t.text === text); if (k < 0) return;
@@ -223,6 +237,7 @@
           if (ta && sb) { sb.onclick = () => { sendAsk(ta.value, k); ta.value = ''; }; ta.onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sb.click(); }; }
           m.querySelectorAll('[data-quick]').forEach(b => b.onclick = () => { if (ta) { ta.value = b.dataset.quick; ta.focus(); } });
           const db = m.querySelector('.of-donebox'); if (db) db.ontoggle = () => { window.__ofDoneOpen = db.open; };
+          { const ab = m.querySelector('.of-add-b'), at = m.querySelector('.of-add-t'), ad = m.querySelector('.of-add-d'); if (ab) { const go = async () => { ab.disabled = true; const ok = await addTodo(at.value, ad.value); ab.disabled = false; if (ok) { at.value = ''; const sc = m.querySelector('.of-box').scrollTop; draw('todo'); m.querySelector('.of-box').scrollTop = sc; } }; ab.onclick = go; at.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); go(); } }; ad.onchange = () => window.__ofAddDept = ad.value; } }
           m.querySelectorAll('[data-chk]').forEach(b => b.onclick = async () => { const row = b.closest('.of-todo'); const done = b.dataset.chk === '1'; row.classList.add(done ? 'checking' : 'unchecking'); if (done) b.textContent = '✓'; await toggleTodo(row.dataset.t, done); setTimeout(() => { const sc = m.querySelector('.of-box').scrollTop; draw('todo'); m.querySelector('.of-box').scrollTop = sc; }, 650); }); };
       m.onclick = e => { if (e.target === m) m.remove(); }; draw(tab || 'todo'); document.body.appendChild(m);
     };
