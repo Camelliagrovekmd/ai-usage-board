@@ -11,12 +11,14 @@
   const CFG = {"boss":{"dir":"poses/boss/","seat":{"type1":[145.5,292,102.3],"type2":[144.5,292,102.1],"sleep":[144.2,316.9,84],"startle":[150.7,279,96.4],"key1":[145.5,292,102.3],"key2":[145.5,292,102.3],"key3":[145.5,292,102.3],"key4":[145.5,292,102.3]},"above":["sleep"],"ovs":[["poses/boss/ov.webp",[110,238,295,422]]],"stand":[112,440,139.2],"standImg":"poses/boss/walk1.webp","boss":true},"herb":{"dir":"poses/herb/","seat":{"type1":[614.6,189.5,97.7],"type2":[614.3,189.5,98.1],"sleep":[602.9,211.2,81.3],"doze":[623.4,174.2,97.7],"startle":[615.6,188.5,83.4],"stretch":[625.9,186.5,85.4]},"above":["sleep"],"ovs":[["poses/herb/ov.webp",[565,128,755,288]]],"stand":[695,285,128.8],"standImg":"sprites/stand_herb.webp"},"edu":{"dir":"poses/edu/","seat":{"type1":[926.5,245,124.5],"type2":[925.6,245,125.7],"sleep":[946.7,283.7,93.3],"doze":[930.9,241.7,112.7],"startle":[942.9,231.3,123.1],"stretch":[936.4,250.2,104.2]},"above":["sleep"],"ovs":[["poses/edu/ov.webp",[902,198,1062,362]]],"stand":[1081,415,169.9],"standImg":"sprites/stand_edu.webp"},"col":{"dir":"poses/col/","seat":{"type1":[390.7,440,131.3],"type2":[391.9,440,129.1],"sleep":[369.9,475.3,104.1],"doze":[403,446,116.3],"startle":[402,440.2,122.2],"stretch":[396.8,450.5,111.8]},"above":["sleep"],"ovs":[["poses/col/ov.webp",[352,392,522,568]]],"stand":[397,538,159.1],"standImg":"sprites/stand_col.webp"},"ops":{"dir":"poses/ops/","seat":{"type1":[1007.2,475.7,100.2],"type2":[1008,475.7,99.5],"sleep":[1004.5,513.2,68.3],"doze":[1018.3,466.6,93.8],"startle":[1012.6,473.5,86.8],"stretch":[1008,473.3,87]},"above":["sleep"],"ovs":[["poses/ops/ov.webp",[978,418,1162,578]]],"stand":[985,515,131.2],"standImg":"sprites/stand_ops.webp"},"news":{"dir":"poses/news/","seat":{"type1":[1391.7,519.9,109.2],"type2":[1394.8,519.9,108.7],"sleep":[1413.3,554.4,81.1],"doze":[1396.7,508.5,102.5],"startle":[1405.8,503.2,107.8],"stretch":[1403,509.9,101.1]},"above":["sleep"],"ovs":[["poses/news/ov.webp",[1368,462,1522,638]]],"stand":[1420,586,142.5],"standImg":"sprites/stand_news.webp"},"vid":{"dir":"poses/vid/","seat":{"type1":[989.9,629.6,107.2],"type2":[989.6,629.6,106.6],"sleep":[992.7,668.1,75.8],"doze":[987.6,621,104.6],"startle":[987.2,625.9,99.7],"stretch":[997.3,625.1,100.4]},"above":["sleep"],"ovs":[["poses/vid/ov.webp",[938,542,1152,742]]],"stand":[1105,706,151.2],"standImg":"sprites/stand_vid.webp"},"diet":{"dir":"poses/diet/","seat":{"type1":[655.7,668.6,101.3],"type2":[656.4,668.6,101.1],"sleep":[649,705.1,71],"doze":[666.3,656.1,96.4],"startle":[661.8,656.5,96],"stretch":[651.5,656.5,96]},"above":["sleep"],"ovs":[["poses/diet/ov.webp",[632,582,822,768]]],"stand":[681,719,133.1],"standImg":"sprites/stand_diet.webp"},"tang":{"dir":"poses/tang/","seat":{"type1":[1201.8,670.9,103.6],"type2":[1205.6,670.9,99.6],"sleep":[1207.6,701.6,80.5],"doze":[1204.6,679.1,93.1],"startle":[1206.6,684.9,87.4],"stretch":[1212.1,681.7,90.6]},"above":["sleep"],"ovs":[["poses/tang/ov.webp",[1158,602,1358,812]]],"stand":[1271,744,160.2],"standImg":"sprites/stand_tang.webp"},"ctl":{"dir":"poses/ctl/","seat":{"type1":[660.5,396,102],"type2":[660.4,394.2,102.9],"sleep":[658.5,422.6,81],"doze":[667,389.3,93.9],"startle":[655,389.2,92.3],"stretch":[653.4,385.9,95.5]},"above":["type1","type2","sleep"],"ovs":[["poses/ctl/ov_table.webp",[598,440,744,560]],["poses/ctl/ov_monitor.webp",[740,406,812,505],4]],"stand":[646,446,114],"standImg":"sprites/stand_ctl.webp"}};
   const HUB = {"H1":[330,490],"H2":[502,456],"H3":[560,385],"H4":[767,625],"H5":[913,567],"H6":[1116,467],"H7":[1347,569],"H8":[1191,688],"H9":[1300,728],"H10":[763,374],"H12":[979,513],"H13":[1269,510],"H14":[540,768],"H15":[395,823],"H16":[212,754],"G1":[1254,643],"H17":[693,654],"H18":[627,698],"H19":[575,742],"B1":[115,482]};
   const EDGES = [["H1","H2"],["H2","H3"],["H1","H3"],["H3","H10"],["H10","H12"],["H12","H5"],["H5","H4"],["H12","H6"],["H6","H13"],["H13","H7"],["H8","H9"],["H15","H16"],["H7","G1"],["G1","H8"],["H4","H17"],["H14","H15"],["H17","H18"],["H18","H19"],["H19","H14"],["H1","B1"]];
-  const OUTINGS = [[403,303,"창밖 구경"],[893,311,"화이트보드"],[951,581,"수다"],[179,731,"소파에서 쉬는 중","sofaL"],[240,706,"소파에서 차 한잔","sofaR"],[1365,470,"셀카 놀이","selfie"]];
+  const OUTINGS = [[403,303,"창밖 구경","back"],[798,348,"화이트보드","back3"],[951,581,"수다"],[179,731,"소파에서 쉬는 중","sofaL"],[240,706,"소파에서 차 한잔","sofaR"],[1365,470,"셀카 놀이","selfie"]];
   const SOFA = {"sofaL":{"foot":[160,716],"walk":[155,725]},"sofaR":{"foot":[232,700],"walk":[266,688]}};
   const TAKEN = new Set();   // 한 장소에 한 명만
   const BOSS_OUT = {"tea":[537,333,"약재실에서 차 한잔"],"coffee":[1318,734,"원외탕전실 커피"],"exit":[330,490],"selfie":[1365,470,"셀카 놀이","selfie"]};
   const WALKN = { diet: 2 };          // 걷기 프레임 수 (기본 4: 왼발-모음-오른발-모음)
-  const FACE_LEFT = ['edu'];         // 걷기 그림이 왼쪽을 보는 캐릭터
+  const FACE_LEFT = ['edu'];         // (옛 그림) 걷기 그림이 왼쪽을 보는 캐릭터
+  // 방향별 걷기 그림이 있는 캐릭터: walk1-4 앞 대각선(오른쪽 아래), bwalk1-4 뒤 대각선(오른쪽 위), kwalk1-4 뒷모습
+  const DIRWALK = new Set(['boss', 'herb', 'edu', 'col', 'ops', 'news', 'vid', 'diet', 'tang', 'ctl']);
   const BOSS_IDLE_MS = 30 * 60e3;   // 지시 없이 30분 → 진료중
   const depth = y => 0.7 + 0.5 * y / H0;
   // 통로 길찾기: 가장 가까운 통로점끼리 최단 경로
@@ -63,14 +65,15 @@
     const place = (img, b) => { img.style.left = P(b[0], W0); img.style.top = P(b[1], H0); img.style.width = P(b[2] - b[0], W0); img.style.height = P(b[3] - b[1], H0); };
     const pose = mk('lf-pose', 1);
     for (const [s, b, z] of cfg.ovs) { const o = mk('lf-ov', z || 2); o.src = A + s + ver; place(o, b); }
-    const walk = mk('lf-walk', 5);
+    const walk = mk('lf-walk', 7);
     const zz = document.createElement('div'); zz.className = 'lf-z'; zz.innerHTML = '<span>Z</span><span>z</span><span>z</span>'; zz.style.display = 'none'; box.appendChild(zz);
-    const fx = document.createElement('div'); fx.style.cssText = 'position:absolute;inset:0;z-index:6'; box.appendChild(fx);
+    const fx = document.createElement('div'); fx.style.cssText = 'position:absolute;inset:0;z-index:8;pointer-events:none'; box.appendChild(fx);
     const wind = document.createElement('div'); wind.className = 'lf-wind'; wind.innerHTML = '<i></i><i></i><i></i><b></b><b></b><b></b>'; wind.style.display = 'none'; box.appendChild(wind);
     const windOn = on => { if (!on) { wind.style.display = 'none'; return; } const t = cfg.seat.type1, wpx = t[2] * 0.87; wind.style.left = P(t[0] + wpx * 0.53, W0); wind.style.top = P(t[1] + t[2] * 0.82, H0); wind.style.width = P(wpx * 0.85, W0); wind.style.display = ''; };
     const has = k => !!cfg.seat[k];
-    const frames = {}; const WN = WALKN[id] || 4, WK = Array.from({ length: WN }, (_, i) => 'walk' + (i + 1)), FACEL = FACE_LEFT.includes(id);
-    for (const k of [...Object.keys(cfg.seat), ...WK, ...(cfg.boss ? ['tea', 'coffee'] : [])]) { const im = new Image(); im.src = A + cfg.dir + k + '.webp' + ver; frames[k] = im.src; }
+    const frames = {}; const DW = DIRWALK.has(id); const WN = DW ? 4 : (WALKN[id] || 4), WK = Array.from({ length: WN }, (_, i) => 'walk' + (i + 1)), FACEL = !DW && FACE_LEFT.includes(id);
+    const BK = DW ? [1, 2, 3, 4].map(i => 'bwalk' + i) : WK, KK = DW ? [1, 2, 3, 4].map(i => 'kwalk' + i) : WK;
+    for (const k of [...Object.keys(cfg.seat), ...WK, ...(DW ? [...BK, ...KK] : []), ...(cfg.boss ? ['tea', 'coffee'] : [])]) { const im = new Image(); im.src = A + cfg.dir + k + '.webp' + ver; frames[k] = im.src; }
     const standSrc = A + cfg.standImg + ver;
     const S = cfg.stand, hAt = y => S[2] * depth(y) / depth(S[1]);
     let timers = [], mode = working ? 'work' : 'rest', busy = false, alive = true, away = false, raf = 0;
@@ -98,15 +101,17 @@
       if (fromSeat) { const ghost = pose.cloneNode(); ghost.style.transition = 'opacity .45s'; ghost.style.pointerEvents = 'none'; box.appendChild(ghost); requestAnimationFrame(() => ghost.style.opacity = 0); setTimeout(() => ghost.remove(), 500); }
       pose.style.display = 'none'; walk.style.display = ''; walk.style.transition = 'opacity .45s'; walk.style.opacity = fromSeat ? 0 : 1; if (fromSeat) requestAnimationFrame(() => walk.style.opacity = 1);
       let seg = 0, f = -1;
-      const go = () => { if (seg >= pts.length - 1) { done && done(); return; } const a = pts[seg], b = pts[seg + 1]; const dur = Math.max(900, Math.hypot(b[0] - a[0], b[1] - a[1]) / 30 * 1000); walk.classList.toggle('flip', FACEL ? b[0] > a[0] : b[0] < a[0]); const t0 = performance.now();
+      const go = () => { if (seg >= pts.length - 1) { done && done(); return; } const a = pts[seg], b = pts[seg + 1]; const dur = Math.max(900, Math.hypot(b[0] - a[0], b[1] - a[1]) / 30 * 1000); const dx = b[0] - a[0], dy = b[1] - a[1]; let set = WK, fl = FACEL ? dx > 0 : dx < 0;
+        if (DW && dy < 0) { if (Math.abs(dx) < -dy * 0.45) { set = KK; fl = false; } else set = BK; }   // 멀어질 때: 뒷모습 / 뒤 대각선
+        walk.classList.toggle('flip', fl); f = -1; const t0 = performance.now();
         const step = () => { if (!alive) return; const now = performance.now(); const t = Math.min(1, (now - t0) / dur); const x = a[0] + (b[0] - a[0]) * t, y = a[1] + (b[1] - a[1]) * t;
           walk.style.left = P(x, W0); walk.style.top = P(y, H0); walk.style.height = P(hAt(y), H0);
-          const nf = Math.floor(now / (WN === 4 ? 300 : 360)) % WN; if (nf !== f) { f = nf; walk.src = frames[WK[f]]; }
+          const nf = Math.floor(now / (WN === 4 ? 300 : 360)) % WN; if (nf !== f) { f = nf; walk.src = frames[set[f]]; }
           if (t < 1) raf = requestAnimationFrame(step); else { seg++; go(); } }; raf = requestAnimationFrame(step); };
       go();
     }
     const walkTo = (from, to, done) => walkPath(route(from, to), done);
-    function standAt(p, src) { walk.src = src || standSrc; walk.classList.remove('flip'); walk.style.left = P(p[0], W0); walk.style.top = P(p[1], H0); walk.style.height = P(hAt(p[1]), H0); walk.style.display = ''; }
+    function standAt(p, src, fl) { walk.src = src || standSrc; walk.classList.toggle('flip', !!fl); walk.style.left = P(p[0], W0); walk.style.top = P(p[1], H0); walk.style.height = P(hAt(p[1]), H0); walk.style.display = ''; }
     const top = p => [p[0], p[1] - hAt(p[1]) - 4];
     // 다녀오기 (쉬는 시간 산책 / 원장님 차·커피)
     let sofaOv = null;
@@ -118,7 +123,7 @@
     const unSofa = () => {};
     function trip(o, img, then) { const key = o[2]; if (TAKEN.has(key)) { then(); return; } TAKEN.add(key); busy = true; sit(has('stretch') ? 'stretch' : 'type1');
       const back = () => { unSofa(); walkTo(o, S, () => { TAKEN.delete(key); settle('type1'); later(() => { busy = false; then(); }, 480); }); };
-      later(() => walkTo(S, o, () => { if (o[3] && SOFA[o[3]]) { const at = sofaSit(o[3]); say(o[2], 3000, at); later(back, rnd(20000, 40000)); } else if (o[3] === 'selfie') { standAt(o, A + cfg.dir + 'cute.webp' + ver); say(o[2], 2500, top(o)); const shots = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < shots; i++) later(() => { const f = document.createElement('div'); f.className = 'lf-flash'; const h = hAt(o[1]); f.style.left = P(o[0], W0); f.style.top = P(o[1] - h * 0.55, H0); f.style.width = P(h * 1.6, W0); f.style.height = P(h * 1.6, H0); fx.appendChild(f); setTimeout(() => f.remove(), 600); if (i === shots - 1) say('찰칵!', 1200, top(o)); }, 2600 + i * rnd(1300, 2200)); later(back, 2600 + shots * 2200 + rnd(1500, 3000)); } else { standAt(o, img); say(o[2], 3000, top(o)); later(back, rnd(9000, 16000)); } }), 1200); }
+      later(() => walkTo(S, o, () => { if (o[3] && SOFA[o[3]]) { const at = sofaSit(o[3]); say(o[2], 3000, at); later(back, rnd(20000, 40000)); } else if (o[3] === 'selfie') { standAt(o, A + cfg.dir + 'cute.webp' + ver); say(o[2], 2500, top(o)); const shots = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < shots; i++) later(() => { const f = document.createElement('div'); f.className = 'lf-flash'; const h = hAt(o[1]); f.style.left = P(o[0], W0); f.style.top = P(o[1] - h * 0.55, H0); f.style.width = P(h * 1.6, W0); f.style.height = P(h * 1.6, H0); fx.appendChild(f); setTimeout(() => f.remove(), 600); if (i === shots - 1) say('찰칵!', 1200, top(o)); }, 2600 + i * rnd(1300, 2200)); later(back, 2600 + shots * 2200 + rnd(1500, 3000)); } else { const bv = DW && (o[3] === 'back' || o[3] === 'back3') ? frames[o[3] === 'back' ? KK[1] : BK[1]] : null; standAt(o, img || bv); say(o[2], 3000, top(o)); later(back, rnd(9000, 16000)); } }), 1200); }
 
     // 일하는 중: 타이핑 (원장님은 다다다 빠르게) + 가끔 기지개
     function workLoop() { if (mode !== 'work' || busy || away) return; let n = 0; const fast = cfg.boss;

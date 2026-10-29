@@ -99,7 +99,7 @@
   @keyframes ofHop{0%,86%,100%{margin-top:0}90%{margin-top:-5px}95%{margin-top:0}}
   @media (prefers-reduced-motion:reduce){.of-bub,.of-tag.w,.of-glow,.of-zz span,.of-bub .dots i{animation:none}}
   @media (max-width:640px){.of-bub{font-size:9px;padding:1px 6px;transform:translate(-50%,calc(-100% - 26px));max-width:120px}.of-zz{display:none}.of-glow{width:9%}}
-  .of-anim{position:absolute;inset:0;pointer-events:none;z-index:1}.of-noanim .of-anim{display:none}.of-stage>img{min-height:120px}
+  .of-anim{position:absolute;inset:0;pointer-events:none}.of-noanim .of-anim{display:none}.of-stage>img{min-height:120px}
   .of-seat{position:absolute;opacity:0;transition:opacity .7s ease}.of-seat.on{opacity:1;animation:ofBob 3.2s ease-in-out infinite}
   .of-sp{position:absolute;transform:translate(-50%,-100%);transition:left 3s linear,top 3s linear,height 3s linear,opacity .6s ease;filter:drop-shadow(0 4px 3px rgba(60,40,10,.25))}
   .of-sp.walk{animation:ofWalk .42s ease-in-out infinite}
@@ -119,7 +119,31 @@
   .of-empty{font-size:12.5px;color:var(--of-mut)}
   @media (max-width:1180px){.of{grid-template-columns:1fr 1fr}.of>.of-col:first-child{grid-column:1/-1}}
   @media (max-width:640px){.of-stage .of-top{position:static;margin:0;border-radius:0 0 14px 14px;box-shadow:none;background:#fffdf8}.of-tag{padding:1px 5px !important;font-size:9.5px !important;border-radius:8px}.of-tag .of-l2{display:none !important}.of-tag .of-dot{width:6px;height:6px}.of-tag::after{border-width:4px}.of-tag.boss small{display:none}.of-tag.boss{font-size:10px !important}.of-av.lg{width:16px;height:16px}.of-fsbtn{font-size:11px;padding:4px 8px;right:6px;top:6px}.of-full .of-tag .of-l2{display:flex !important}.of-full .of-tag{font-size:11px !important}.of-full .of-stage .of-top{display:none}.of{grid-template-columns:1fr;margin:6px 8px 12px;padding:8px}.of-tag{font-size:10px;padding:2px 6px}.of-tag small,.of-tag .of-badge{display:none}.of-top{font-size:11px;padding:6px 8px}.of-top b{font-size:13px}}
-  `;
+
+  .of-stage{container-type:inline-size}
+  .of-plq{position:absolute;transform:translate(-50%,-50%) var(--r,none);z-index:4;cursor:pointer;background:linear-gradient(180deg,#fffaf1,#f1e2c6);border:max(1px,.11cqw) solid #a7743c;border-radius:.3cqw;padding:.16cqw .5cqw .2cqw;box-shadow:0 .12cqw .3cqw rgba(60,35,10,.38),inset 0 0 0 .08cqw rgba(255,255,255,.7);color:#3b2a18;font-weight:800;font-size:.74cqw;line-height:1.22;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:.04cqw;transition:filter .2s}
+  .of-plq:hover{filter:brightness(1.06) drop-shadow(0 0 .3cqw rgba(255,240,200,.9));z-index:6}
+  .of-plq .of-pn{display:flex;align-items:center;gap:.3cqw}.of-plq .of-ps{display:flex;align-items:center;gap:.25cqw;font-size:.82em;font-weight:700;color:#8a6a45}
+  .of-plq .of-dot{width:.48cqw;height:.48cqw}.of-plq .of-badge{font-size:.86em;padding:0 .3cqw;border-radius:.4cqw}
+  .of-plq.w{border-color:#2e8b57;box-shadow:0 0 .7cqw rgba(80,220,140,.75),0 .12cqw .3cqw rgba(60,35,10,.38)}.of-plq.w .of-ps b{color:#1f6b43}
+  .of-plq.a{border-color:#e39b2d;box-shadow:0 0 .7cqw rgba(255,180,60,.8),0 .12cqw .3cqw rgba(60,35,10,.38)}.of-plq.a .of-ps b{color:#9a5d0b;animation:ofBlink 1.4s ease-in-out infinite}
+  .of-plq.v{writing-mode:vertical-rl;text-orientation:upright;padding:.45cqw .14cqw;letter-spacing:.05em}.of-plq.v .of-badge{text-orientation:mixed;padding:.3cqw 0}
+  .of-plq.v .of-pn,.of-plq.v .of-ps{gap:.25cqw}
+  .of-board{position:absolute;transform:translate(-50%,-50%) skewY(-15.8deg) scale(1.3);z-index:1;cursor:pointer;box-sizing:border-box;color:#f6efdc;font-size:.66cqw;line-height:1.3;white-space:nowrap;padding:.45cqw .6cqw .4cqw;border:.42cqw solid #9a6634;border-radius:.35cqw;
+    background:radial-gradient(120% 80% at 30% 0%,rgba(255,255,255,.13),rgba(255,255,255,0) 60%),linear-gradient(165deg,#34503f,#203629 70%,#1b2e23);
+    box-shadow:inset 0 0 0 .1cqw #c8955a,inset 0 0 1.2cqw rgba(0,0,0,.45),.35cqw .6cqw 1.1cqw rgba(30,20,5,.45);display:flex;flex-direction:column;gap:.22cqw;transition:filter .2s}
+  .of-board:hover{filter:brightness(1.1)}
+  .of-board::before{content:'';position:absolute;left:12%;right:12%;bottom:100%;height:.3cqw;pointer-events:none;background:linear-gradient(#5b3d22,#5b3d22) left/.55cqw 100% no-repeat,linear-gradient(#5b3d22,#5b3d22) right/.55cqw 100% no-repeat}
+  .of-board::after{display:none}
+  .of-bd-h{display:flex;align-items:center;gap:.3cqw;font-weight:900;font-size:1.12em;letter-spacing:.02em;border-bottom:.08cqw dashed rgba(246,239,220,.4);padding-bottom:.2cqw}.of-bd-h .of-av{width:1.25cqw;height:1.25cqw;border:.08cqw solid #f3d9a4}
+  .of-bd-h small{margin-left:auto;font-weight:600;font-size:.78em;color:#d9cfae}
+  .of-bd-r{display:flex;align-items:center;gap:.3cqw;padding:.12cqw .25cqw;border-radius:.25cqw;background:rgba(255,255,255,.06);font-weight:700}
+  .of-bd-r:hover{background:rgba(255,255,255,.16)}.of-bd-r b{margin-left:auto;min-width:1.4cqw;text-align:center;border-radius:.6cqw;padding:0 .3cqw;background:#f3d9a4;color:#2b2a26;font-size:.92em}.of-bd-r b.hot{background:#e0574c;color:#fff}.of-bd-r b.t{background:transparent;color:#f3d9a4;font-weight:600}
+  .of-bd-n{font-size:.82em;color:#cfe5d6;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 .25cqw}
+  .of-bd-f{margin-top:auto;font-size:.8em;color:#d9cfae;display:flex;gap:.4cqw;align-items:center;justify-content:flex-start;padding-left:.25cqw}.of-bd-f .of-dot{width:.42cqw;height:.42cqw}
+  .of-tag.boss.on-bd{font-size:max(8px,.8cqw) !important;padding:.35cqw .65cqw;border-radius:.75cqw;gap:.35cqw}.of-tag.boss.on-bd small{font-size:.8em}.of-tag.boss.on-bd .of-av.lg{width:1.45cqw;height:1.45cqw;min-width:14px;min-height:14px}.of-tag.boss.on-bd .of-cnt{font-size:.82em}
+  .of-tag.boss.on-bd{transform:translate(-50%,calc(-100% - 6px)) skewY(-15.8deg)}.of-tag.boss.on-bd:hover{transform:translate(-50%,calc(-100% - 9px)) skewY(-15.8deg)}
+    `;
   function ensureCss() { if (document.getElementById('of-css')) return; const s = document.createElement('style'); s.id = 'of-css'; s.textContent = css; document.head.appendChild(s); }
   const dname = (o, id) => (o.depts.find(d => d.id === id) || {}).name || '';
   const dicon = (o, id) => ICON[(o.depts.find(d => d.id === id) || {}).animal] || '•';
@@ -132,6 +156,10 @@
   const SEAT = {"boss":[130,268,275,402],"herb":[585,158,735,268],"edu":[922,228,1042,342],"ctl":[638,362,778,478],"col":[372,422,502,548],"ops":[998,448,1142,558],"news":[1388,492,1502,618],"vid":[958,572,1132,722],"diet":[652,612,802,748],"tang":[1178,632,1338,792]};
   const LOUNGE = { herb: [178, 738, 112], edu: [258, 764, 116], ctl: [340, 748, 106], col: [424, 792, 116], ops: [506, 738, 106], diet: [108, 790, 114], news: [1226, 492, 92], vid: [1304, 514, 96], tang: [1262, 404, 84] };
   const ASPECT = {"boss":0.622,"herb":0.819,"edu":0.616,"ctl":0.846,"col":0.537,"ops":0.927,"news":0.617,"vid":0.941,"diet":0.819,"tang":0.858};
+  // 명패(부서 이름표) 위치: 배경 1672×941 기준 좌표 + 기울기(가구 면에 붙은 것처럼). v:1 = 세로 명패
+  const PLQ = { herb: { x: 700, y: 54, r: 'skewY(13.4deg)' }, edu: { x: 1092, y: 264, v: 1, r: 'skewY(14deg)' }, col: { x: 572, y: 584, r: 'skewY(-22.7deg)' }, ctl: { x: 797, y: 500, r: 'skewY(-20.5deg)' }, ops: { x: 1192, y: 582, r: 'skewY(-25deg)' }, news: { x: 1560, y: 535, v: 1, r: 'skewY(15deg)' }, diet: { x: 843, y: 762, v: 1, r: 'matrix(1,0.6,-0.2,1,0,0)' }, vid: { x: 934, y: 740, r: 'skewY(22.2deg)' }, tang: { x: 1175, y: 750, v: 1, r: 'skewY(24deg)' } };
+  const BOARD = { x: 150, y: 212, w: 198, h: 160, tagY: 92 }; // 창틀 가로대: 윗면 y=135.8-0.283x, 아랫면 y=145.9-0.281x (-15.8°) // 원장실 현황판 (창문 앞에 걸린 판)
+  window.OF_PLQ = PLQ; window.OF_BOARD = BOARD;
   const pct = (v, t) => (v / t * 100).toFixed(3) + '%';
   const seatFeet = id => { const s = SEAT[id]; return [(s[0] + s[2]) / 2, s[3] - (s[3] - s[1]) * 0.12, (s[3] - s[1]) * 0.95]; };
   const animLayer = (o, A, ver) => {
@@ -163,14 +191,22 @@
     /*boss-sync*/ if (o.boss && Array.isArray(o.boss.todos)) { c.todos = o.boss.todos.length; if (Array.isArray(o.boss.approvals)) c.approvals = o.boss.approvals.length; const bd = (o.depts || []).find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
     const A = opt.assets || 'office/', AV2 = opt.assetVer || ''; const AN = opt.anim !== false && !!(opt.anim || window.OF_ANIM) ? animLayer(o, A, AV2) : null;
-    const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(AN ? (opt.emptyBg || (A + 'office_empty.webp' + AV2)) : (opt.bg || 'office/office_bg.webp'))}" alt="AI 동백숲한의원 운영실"${AN ? ` onerror="this.onerror=null;this.parentNode.classList.add('of-noanim');this.src='${esc(opt.bg || 'office/office_bg.webp')}'"` : ''}>${AN ? '<div class="of-anim">' + AN.html + '</div>' : ''}
+    const B0 = o.boss || {}; const nTodo = c.todos ?? (B0.todos || []).length, nAppr = c.approvals ?? 0, nRep = c.reports ?? (B0.reports || []).length; const brAt = c.briefingAt ? (md(c.briefingAt) === md(new Date().toISOString()) ? '오늘 ' + hm(c.briefingAt) : md(c.briefingAt)) : '';
+    const today = (() => { const p = Object.fromEntries(new Intl.DateTimeFormat('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short', timeZone: 'Asia/Seoul' }).formatToParts(new Date()).map(x => [x.type, x.value])); return p.month + '/' + p.day + ' (' + p.weekday + ')'; })();
+    const boardHtml = `<div class="of-board" data-board="1" title="원장실 현황판 · 눌러서 보기" style="left:${pct(BOARD.x, OFW)};top:${pct(BOARD.y, OFH)};width:${pct(BOARD.w, OFW)};height:${pct(BOARD.h, OFH)}">
+      <div class="of-bd-h">${AV()} 원장실 현황판<small>${esc(today)}</small></div>
+      <div class="of-bd-r" data-bt="todo">✅ 할 일<b class="${nTodo ? 'hot' : ''}">${nTodo}</b></div>${det && (B0.todos || [])[0] ? `<div class="of-bd-n">· ${esc(B0.todos[0].text)}${B0.todos.length > 1 ? ' 외 ' + (B0.todos.length - 1) : ''}</div>` : ''}
+      <div class="of-bd-r" data-bt="appr">🔔 승인할 일<b class="${nAppr ? 'hot' : ''}">${nAppr}</b></div>
+      <div class="of-bd-r" data-bt="rep">📋 알아둘 보고<b>${nRep}</b></div>
+      <div class="of-bd-r" data-bt="brief">☀️ 아침 브리핑<b class="t">${esc(brAt || '08:00')}</b></div></div>`;
+    const stage = `<div class="of-stage"><button class="of-fsbtn" data-fs="1">${window.__ofFull ? '↙ 원래 크기로' : '⛶ 크게 보기'}</button><img src="${esc(AN ? (opt.emptyBg || (A + 'office_empty.webp' + AV2)) : (opt.bg || 'office/office_bg.webp'))}" alt="AI 동백숲한의원 운영실"${AN ? ` onerror="this.onerror=null;this.parentNode.classList.add('of-noanim');this.src='${esc(opt.bg || 'office/office_bg.webp')}'"` : ''}>${boardHtml}${AN ? '<div class="of-anim">' + AN.html + '</div>' : ''}
       <div class="of-top"><b>AI 동백숲한의원 운영실</b>
         <span class="of-chip"><i class="of-dot w"></i>일하는 중 ${c.working ?? 0}</span>
         <span class="of-chip"><i class="of-dot a"></i>승인 대기 ${c.waitingDepts ?? 0}</span>
         <span class="of-chip"><i class="of-dot"></i>쉬는 중 ${c.resting ?? 0}</span>
         <span class="of-chip">· ${ago(o.generatedAt)} 갱신</span><button class="of-bossbtn" data-boss="1">${AV()} 원장실</button></div>
-      ${o.depts.filter(d => !d.boss && d.status === '일하는 중').map(d => `<i class="of-glow" style="left:${d.x}%;top:${d.y}%"></i>`).join('')}
-      ${o.depts.map(d => d.boss ? `<div class="of-tag boss" data-boss="1" style="left:${d.x}%;top:${d.y}%">${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : `<div class="of-tag ${ST[d.status]}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span>${d.status === '쉬는 중' ? '<span class="of-zz"><span>Z</span><span>z</span><span>z</span></span>' : ''}${det && d.current && d.status === '일하는 중' ? `<span class="of-now">${esc(d.current)}</span>` : ''}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
+      ${o.depts.filter(d => !d.boss && d.status === '일하는 중').map(d => { const P = PLQ[d.id]; return `<i class="of-glow" style="left:${P ? pct(P.x, OFW) : d.x + '%'};top:${P ? pct(P.y, OFH) : d.y + '%'}"></i>`; }).join('')}
+      ${o.depts.map(d => d.boss ? `<div class="of-tag boss on-bd" data-boss="1" style="left:${pct(BOARD.x, OFW)};top:${pct(BOARD.tagY, OFH)}">` + '' + `${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : PLQ[d.id] ? `<div class="of-plq ${ST[d.status]}${PLQ[d.id].v ? ' v' : ''}" data-dept="${d.id}" title="${esc(d.name + ' · ' + d.status + (det && d.current ? ' · ' + d.current : ''))}" style="left:${pct(PLQ[d.id].x, OFW)};top:${pct(PLQ[d.id].y, OFH)};--r:${PLQ[d.id].r}"><span class="of-pn"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-ps"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span></div>` : `<div class="of-tag ${ST[d.status]}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span>${d.status === '쉬는 중' ? '<span class="of-zz"><span>Z</span><span>z</span><span>z</span></span>' : ''}${det && d.current && d.status === '일하는 중' ? `<span class="of-now">${esc(d.current)}</span>` : ''}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
     </div>`;
     // 알림
     const appr = det ? (o.approvals || []) : [];
@@ -264,6 +300,7 @@
     if (!window.__ofEsc) { window.__ofEsc = true; document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.__ofFull && !document.querySelector('.of-modal')) { window.__ofFull = false; window.__ofLast && window.renderOffice(...window.__ofLast); } }); }
     window.__ofLast = [el, o, opt];
     el.querySelectorAll('[data-boss]').forEach(b => b.onclick = () => openBoss('todo'));
+    el.querySelectorAll('[data-board]').forEach(b => b.onclick = e => { const r = e.target.closest('[data-bt]'); openBoss(r ? r.dataset.bt : 'todo'); });
     if (opt.openBoss) openBoss(opt.openBoss);
   };
 })();
