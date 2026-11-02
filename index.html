@@ -138,20 +138,20 @@ function grokBody(s, at) {
   const number = n => typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('ko-KR') : '정보 없음';
   const stamp = at || s.observedAt;
   const old = !stamp || !Number.isFinite(Date.parse(stamp)) || Date.now() - Date.parse(stamp) > 120*60000;
-  const row = (label, w) => !w ? '<div class="sub">'+label+': 정보 없음</div>' : '<div class="row"><b>'+label+' rolling</b><div class="kv"><span>기록된 토큰 / 기록 턴</span><b>'+number(w.tokens)+' / '+number(w.turns)+'턴</b><span>usage 있음 / 없음</span><b>'+number(w.usageTurns)+' / '+number(w.missingUsageTurns)+'턴</b><span>usage 있으나 totalTokens 누락</span><b>'+number(w.missingTotalTokensTurns)+'턴</b><span>세션 모델로 추론</span><b>'+number(w.inferredModelTurns)+'턴</b></div></div>';
+  const row = (label, w) => !w ? '<div class="sub">'+label+': 정보 없음</div>' : '<div class="row"><b>'+label+'</b><div class="kv"><span>기록된 토큰 / 기록 턴</span><b>'+number(w.tokens)+' / '+number(w.turns)+'턴</b><span>사용량 기록 있음 / 없음</span><b>'+number(w.usageTurns)+' / '+number(w.missingUsageTurns)+'턴</b><span>사용량 기록은 있으나 총 토큰 수 누락</span><b>'+number(w.missingTotalTokensTurns)+'턴</b><span>대화의 모델 정보로 추정</span><b>'+number(w.inferredModelTurns)+'턴</b></div></div>';
   const cv = s.extra?.coverage || {};
   const hr = s.historyRecord;
-  const recordText = hr?.status === 'saved' && hr.file ? '개별 스냅샷 저장 확인' : hr?.status === 'failed' ? '개별 스냅샷 저장 실패' : hr?.status === 'saved-superseded' ? '구실행 개별 스냅샷 저장됨 (최신값 아님)' : '개별 스냅샷 저장 상태 정보 없음';
-  return '<div class="sub" style="white-space:normal">Aside 기록 기준, 계정 전체 사용량·남은 한도 아님. 기록 누락 가능. 리셋/퍼센트 모름. 누락 수치는 0 사용이 아닙니다.</div>' +
+  const recordText = hr?.status === 'saved' && hr.file ? '개별 기록 저장 확인' : hr?.status === 'failed' ? '개별 기록 저장 실패' : hr?.status === 'saved-superseded' ? '이전 수집의 개별 기록 저장됨 (최신값 아님)' : '개별 기록 저장 상태 정보 없음';
+  return '<div class="sub" style="white-space:normal">어사이드 기록 기준, 계정 전체 사용량·남은 한도 아님. 기록 누락 가능. 한도 초기화 시각·사용 비율은 알 수 없습니다. 누락 수치는 0 사용이 아닙니다.</div>' +
     ((!s.ok || s.stale || old) ? '<div class="sub" style="white-space:normal;color:var(--warn)">'+(!s.ok ? '조회 실패 · 정보 없음' : s.stale ? '조회 실패 · 마지막 정상 기록' : '오래된 기록 (120분 초과 또는 시각 없음)')+'</div>' : '') +
     (stamp ? '<div class="sub">집계 기준 시각: '+safe(new Date(stamp).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}))+'</div>' : '') +
-    '<div class="sub">'+recordText+(hr?.snapshotState ? ' · '+safe(hr.snapshotState) : '')+' (과거 차트 아님)</div>' +
-    (!s.ok ? '' : '<div class="sub" style="white-space:normal;color:var(--warn)">수집 범위: visible non-archived root newest first + 발견한 childSessions. 숨김·보관 루틴 제외 가능. cursor/정렬 불확실, 완전 수집 보장 안 됨.</div>' + row('최근 5시간', s.fiveHour) + row('최근 7일', s.weekly) +
-      '<div class="sub" style="white-space:normal">집계 탐색 coverage (시각 미상은 기간 미확정): 시각 미상 '+number(cv.unknownTimeTurns)+'턴, 모델 미상 '+number(cv.unknownModelTurns)+'턴(전체 Aside), assistant 기록 없는 Grok 세션 '+number(cv.sessionsWithoutAssistantRecords7d)+'개, usage 전무 Grok 세션 '+number(cv.sessionsWithoutUsage7d)+'개. 5,000건 도달 시 이전 기록 누락 가능 · 도달 세션 '+number(cv.messageLimitSessions)+'개'+(cv.sessionScanLimitReached ? ' · 세션 탐색 상한 도달' : '')+'. 미래 시각 제외 '+number(cv.futureTimestampTurns)+'턴. '+(cv.timeBudgetHit ? '45초 이내 시간 예산 도달: 부분 집계. ' : '')+(cv.duplicatePageDetected ? '중복 페이지/커서 정체로 중단. ' : '')+(cv.orderingUncertain ? 'updatedAt 정렬 불일치. ' : '')+(cv.defaultSettingsUnavailable ? '기본 설정 조회 불가. ' : '')+'세션 모델 추론은 모델 변경 시 부정확할 수 있습니다.</div>' +
+    '<div class="sub">'+recordText+(hr?.snapshotState ? ' · '+safe(({fresh:'정상',stale:'이전 값',partial:'일부 집계',failed:'조회 실패'})[hr.snapshotState] || '알 수 없는 상태') : '')+' (과거 사용량 그래프가 아닙니다)</div>' +
+    (!s.ok ? '' : '<div class="sub" style="white-space:normal;color:var(--warn)">수집 범위: 보관되지 않은 대화와 확인된 하위 작업(목록의 최신순 기준). 숨기거나 보관한 자동 작업은 빠질 수 있음. 목록 탐색·정렬 불확실, 완전 수집 보장 안 됨.</div>' + row('최근 5시간', s.fiveHour) + row('최근 7일', s.weekly) +
+      '<div class="sub" style="white-space:normal">집계 누락 점검 (시각 미상은 기간 미확정): 시각 미상 '+number(cv.unknownTimeTurns)+'턴, 모델 미상 '+number(cv.unknownModelTurns)+'턴(전체 어사이드), 응답 기록 없는 그록 대화 '+number(cv.sessionsWithoutAssistantRecords7d)+'개, 사용량 기록 없는 그록 대화 '+number(cv.sessionsWithoutUsage7d)+'개. 5,000건 도달 시 이전 기록 누락 가능 · 도달 대화 '+number(cv.messageLimitSessions)+'개'+(cv.sessionScanLimitReached ? ' · 대화 목록 탐색 상한 도달' : '')+'. 미래 시각 제외 '+number(cv.futureTimestampTurns)+'턴. '+(cv.timeBudgetHit ? '45초 이내 시간 예산 도달: 일부 집계. ' : '')+(cv.duplicatePageDetected ? '중복 목록 또는 목록 탐색이 진행되지 않아 중단. ' : '')+(cv.orderingUncertain ? '최근 수정 시각의 정렬이 일정하지 않음. ' : '')+(cv.defaultSettingsUnavailable ? '기본 설정 조회 불가. ' : '')+'대화의 모델 정보를 바탕으로 한 추정은 모델 변경 시 부정확할 수 있습니다.</div>' +
       '<div class="models">7일 모델별 기록'+Object.entries(s.extra?.byModel || {}).map(([m,v])=>'<div><span>'+safe(m)+'</span><span>'+number(v.tokens)+' 토큰 · '+number(v.turns)+'턴</span></div>').join('')+'</div>');
 }
 
-function card(k,s,d){ if(k==='grok') return '<div class="card"><h2>Grok · Aside 기록</h2>'+grokBody(s || {ok:false}, d.updatedAt?.grok)+'</div>'; if(!s) return ''; const at=d.updatedAt?.[k]; const age=at?`<span class="pill">${ago(at)}</span>`:'';
+function card(k,s,d){ if(k==='grok') return '<div class="card"><h2>그록 · 어사이드 기록</h2>'+grokBody(s || {ok:false}, d.updatedAt?.grok)+'</div>'; if(!s) return ''; const at=d.updatedAt?.[k]; const age=at?`<span class="pill">${ago(at)}</span>`:'';
   let body='';
   const partialWarning = s.partial ? '<div class="sub" style="color:var(--warn)">부분 집계: 시간 예산 또는 탐색 상한으로 기록 누락 가능.</div>' : '';
   if(!s.ok) body=`<div class="sub" style="color:var(--bad)">${safeHtml(s.error||'조회 실패')}</div>`;
