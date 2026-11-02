@@ -77,7 +77,9 @@
     const standSrc = A + cfg.standImg + ver;
     const S = cfg.stand, hAt = y => S[2] * depth(y) / depth(S[1]);
     let timers = [], mode = working ? 'work' : 'rest', busy = false, alive = true, away = false, raf = 0;
-    const later = (fn, ms) => { const t = setTimeout(() => { if (alive) fn(); }, ms); timers.push(t); return t; };
+    const later = (fn, ms) => { const t = setTimeout(() => { timers = timers.filter(x => x !== t); if (alive) fn(); }, ms); timers.push(t); return t; };
+    const effects = new Set();
+    const expire = (node, ms) => { const t = setTimeout(() => { effects.delete(t); node.remove(); }, ms); effects.add(t); };
     const clear = () => { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); };
     const headAt = () => { const t = cfg.seat.type1; return [t[0] + t[2] * 0.42, t[1] - 4]; };
 
@@ -85,13 +87,13 @@
     function sit(k) {
       if (!has(k)) k = k === 'doze' ? 'sleep' : 'type1';
       const [l, t, h] = cfg.seat[k]; const im = new Image(); im.src = frames[k];
-      const set = () => { const w = h * (im.naturalWidth / im.naturalHeight || 1); pose.src = frames[k]; pose.style.left = P(l, W0); pose.style.top = P(t, H0); pose.style.height = P(h, H0); pose.style.width = P(w, W0); pose.style.zIndex = cfg.above.includes(k) ? 3 : 1; pose.style.display = ''; pose.style.opacity = 1; };
+      const set = () => { if (!alive) return; const w = h * (im.naturalWidth / im.naturalHeight || 1); pose.src = frames[k]; pose.style.left = P(l, W0); pose.style.top = P(t, H0); pose.style.height = P(h, H0); pose.style.width = P(w, W0); pose.style.zIndex = cfg.above.includes(k) ? 3 : 1; pose.style.display = ''; pose.style.opacity = 1; };
       im.complete ? set() : (im.onload = set);
       walk.style.display = 'none'; windOn(false);
       const sleepy = k === 'sleep' || k === 'doze'; zz.style.display = sleepy ? '' : 'none';
       if (sleepy) { zz.style.left = P(l + h * 0.75, W0); zz.style.top = P(t - 6, H0); }
     }
-    function bubble(cls, text, at, ms) { const b = document.createElement('div'); b.className = cls; b.textContent = text; b.style.left = P(at[0], W0); b.style.top = P(at[1], H0); fx.appendChild(b); if (ms) later(() => b.remove(), ms); return b; }
+    function bubble(cls, text, at, ms) { const b = document.createElement('div'); b.className = cls; b.textContent = text; b.style.left = P(at[0], W0); b.style.top = P(at[1], H0); fx.appendChild(b); if (ms) expire(b, ms); return b; }
     const say = (text, ms = 2500, at) => bubble('lf-say', text, at || headAt(), ms);
     const bang = at => bubble('lf-bang', '!', at || headAt(), 1500);
 
@@ -114,19 +116,19 @@
     function standAt(p, src, fl) { walk.src = src || standSrc; walk.classList.toggle('flip', !!fl); walk.style.left = P(p[0], W0); walk.style.top = P(p[1], H0); walk.style.height = P(hAt(p[1]), H0); walk.style.display = ''; }
     const top = p => [p[0], p[1] - hAt(p[1]) - 4];
     // 다녀오기 (쉬는 시간 산책 / 원장님 차·커피)
-    let sofaOv = null;
+    let sofaOv = null, reservation = null;
     function sofaSit(k) { const v = SOFA[k]; const n = k === 'sofaR' ? 'sofa_tea' : 'sofa_doze'; const fr = A + cfg.dir + n + '.webp' + ver; const im = new Image(); im.src = fr;
       const h = hAt(v.foot[1]) * 0.82;   // 소파 전신 앉은 키 = 선 키의 0.82
       const set = () => { const w = h * (im.naturalWidth / im.naturalHeight || 0.8); pose.src = fr; pose.style.left = P(v.foot[0] - w / 2, W0); pose.style.top = P(v.foot[1] - h, H0); pose.style.height = P(h, H0); pose.style.width = P(w, W0); pose.style.zIndex = 1; pose.style.display = ''; };
       im.onerror = () => { im.onerror = null; im.src = frames.type1; }; im.complete && im.naturalWidth ? set() : (im.onload = set); walk.style.display = 'none';
       const dozing = n === 'sofa_doze'; zz.style.display = dozing ? '' : 'none'; if (dozing) { zz.style.left = P(v.foot[0] + h * 0.25, W0); zz.style.top = P(v.foot[1] - h - 4, H0); } return [v.foot[0], v.foot[1] - h - 4]; }
     const unSofa = () => {};
-    function trip(o, img, then) { const key = o[2]; if (TAKEN.has(key)) { then(); return; } TAKEN.add(key); busy = true; sit(has('stretch') ? 'stretch' : 'type1');
-      const back = () => { unSofa(); walkTo(o, S, () => { TAKEN.delete(key); settle('type1'); later(() => { busy = false; then(); }, 480); }); };
+    function trip(o, img, then) { const key = o[2]; if (TAKEN.has(key)) { then(); return; } TAKEN.add(key); reservation = key; busy = true; sit(has('stretch') ? 'stretch' : 'type1');
+      const back = () => { unSofa(); walkTo(o, S, () => { TAKEN.delete(key); reservation = null; settle('type1'); later(() => { busy = false; then(); }, 480); }); };
       later(() => walkTo(S, o, () => { if (o[3] && SOFA[o[3]]) { const at = sofaSit(o[3]); say(o[2], 3000, at); later(back, rnd(20000, 40000)); } else if (o[3] === 'selfie') { standAt(o, A + cfg.dir + 'cute.webp' + ver); say(o[2], 2500, top(o)); const shots = 2 + Math.floor(Math.random() * 3); for (let i = 0; i < shots; i++) later(() => { const f = document.createElement('div'); f.className = 'lf-flash'; const h = hAt(o[1]); f.style.left = P(o[0], W0); f.style.top = P(o[1] - h * 0.55, H0); f.style.width = P(h * 1.6, W0); f.style.height = P(h * 1.6, H0); fx.appendChild(f); setTimeout(() => f.remove(), 600); if (i === shots - 1) say('찰칵!', 1200, top(o)); }, 2600 + i * rnd(1300, 2200)); later(back, 2600 + shots * 2200 + rnd(1500, 3000)); } else { const bv = DW && (o[3] === 'back' || o[3] === 'back3') ? frames[o[3] === 'back' ? KK[1] : BK[1]] : null; standAt(o, img || bv); say(o[2], 3000, top(o)); later(back, rnd(9000, 16000)); } }), 1200); }
 
     // 일하는 중: 타이핑 (원장님은 다다다 빠르게) + 가끔 기지개
-    function workLoop() { if (mode !== 'work' || busy || away) return; let n = 0; const fast = cfg.boss;
+    function workLoop() { if (mode !== 'work') { if (!busy && !away) restLoop(); return; } if (busy || away) return; let n = 0; const fast = cfg.boss;
       if (cfg.boss && clinic) { sit('type1'); later(() => { if (busy) return; clear(); bossBreak(); }, rnd(75000, 150000)); return; }
       const tick = () => { if (mode !== 'work' || busy || away) return; sit(n++ % 2 ? 'type2' : 'type1'); later(tick, rnd(260, 620)); };
       if (fast) { let last = 1; const keyTick = () => { if (mode !== 'work' || busy || away || clinic) return; let k; do { k = 1 + Math.floor(Math.random() * 4); } while (k === last); last = k; sit('key' + k); later(keyTick, rnd(75, 135)); }; keyTick(); } else tick();
@@ -139,7 +141,7 @@
       else if (r < 0.7) trip(BOSS_OUT.tea, frames.tea, workLoop);
       else trip(BOSS_OUT.coffee, frames.coffee, workLoop); }
     // 직원 쉬는 중: 엎드려 자기 / 졸기 / 기지개 / 잠깐 산책
-    function restLoop() { if (mode !== 'rest' || busy) return; const r = Math.random();
+    function restLoop() { if (mode !== 'rest') { if (!busy && !away) workLoop(); return; } if (busy) return; const r = Math.random();
       if (r < 0.55) { sit('type1'); later(restLoop, rnd(10000, 20000)); }
       else if (r < 0.8) { let n = 0, m = Math.floor(rnd(6, 14)); const slow = () => { if (mode !== 'rest' || busy) return; sit(n++ % 2 ? 'type2' : 'type1'); if (n < m) later(slow, rnd(500, 900)); else later(restLoop, rnd(6000, 12000)); }; slow(); }
       else if (r < 0.93) { sit('stretch'); later(() => { sit('type1'); later(restLoop, rnd(6000, 12000)); }, 1900); }
@@ -147,7 +149,11 @@
     // 원장님: 30분 지시 없으면 머리 위에 "진료중" 팻말 (자리는 그대로, 타자 멈춤)
     let sign = null, clinic = false;
     const pokeAt = () => { try { return +localStorage.getItem('of.bossPoke') || 0; } catch { return 0; } };
-    const idleMs = () => Date.now() - Math.max(Date.parse(window.__ofBossLastAt || bossLastAt || 0) || 0, pokeAt());
+    const firstSeenAt = Date.now(); // Missing activity history gets one stable 30-minute grace period.
+    const idleMs = () => {
+      const recorded = Date.parse(window.__ofBossLastAt || bossLastAt || '');
+      return Date.now() - Math.max(Number.isFinite(recorded) ? recorded : firstSeenAt, pokeAt());
+    };
     function showSign() { if (sign) return; const t = cfg.seat.type1; sign = bubble('lf-sign', '진료중', [t[0] + t[2] * 1.05, t[1] + t[2] * 0.3]); }
     function bossCheck() { const idle = idleMs() > BOSS_IDLE_MS; if (idle === clinic) return; clinic = idle;
       if (clinic) { showSign(); if (!busy) { clear(); sit('type1'); workLoop(); } }
@@ -157,7 +163,7 @@
 
     const poke = () => { if (cfg.boss) { const wx = parseFloat(walk.style.left) / 100 * W0, wy = parseFloat(walk.style.top) / 100 * H0; if (walk.style.display !== 'none') { bang([wx, wy - hAt(wy) - 6]); } else bang(); try { localStorage.setItem('of.bossPoke', Date.now()); } catch {} if (clinic) { clinic = false; if (sign) { sign.remove(); sign = null; } if (!busy) { clear(); say('업무 시작!', 1800); later(workLoop, 600); } } return; }
       if (busy && walk.style.display !== 'none') { bang([parseFloat(walk.style.left) / 100 * W0, parseFloat(walk.style.top) / 100 * H0 - hAt(parseFloat(walk.style.top) / 100 * H0) - 6]); return; }
-      clear(); busy = true; sit('startle'); bang();
+      clear(); if (reservation) { TAKEN.delete(reservation); reservation = null; } busy = true; sit('startle'); bang();
       later(() => { busy = false; if (mode === 'rest') { sit('type1'); say(label ? label + ' 여기 있어요!' : '깼어요!', 2200); later(() => { sit('type2'); later(restLoop, 2600); }, 700); } else workLoop(); }, 1400); };
     pose.addEventListener('click', e => { e.stopPropagation(); poke(); });
     walk.addEventListener('click', e => { e.stopPropagation(); poke(); });
@@ -167,10 +173,12 @@
     else start();
     const outing = (i) => { if (busy) return; clear(); const o = OUTINGS[i ?? Math.floor(Math.random() * OUTINGS.length)]; trip(o, null, () => { sit('type1'); later(restLoop, rnd(8000, 14000)); }); };
     return { outing, bossBreak: k => { if (!cfg.boss || busy || away) return; clear(); k === 'sleep' ? (sit('sleep'), later(() => { sit('type1'); later(workLoop, 1200); }, 8000)) : trip(BOSS_OUT[k], frames[k], workLoop); }, check: bossCheck,
-      setMode(w) { if (cfg.boss) return; const m = w ? 'work' : 'rest'; if (m === mode) return; mode = m; start(); }, destroy() { alive = false; clear(); clearInterval(iv); box.remove(); } };
+      update(d) { label = d.boss ? '' : d.name; bossLastAt = d.boss ? d.lastAt : null; if (cfg.boss) bossCheck(); this.setMode(d.status === '일하는 중'); },
+      setMode(w) { if (cfg.boss) return; const m = w ? 'work' : 'rest'; if (m === mode) return; mode = m; if (!busy) start(); }, destroy() { alive = false; clear(); effects.forEach(clearTimeout); effects.clear(); clearInterval(iv); if (reservation) TAKEN.delete(reservation); box.remove(); } };
   }
 
   const live = {};
+  let mountedLayer = null, mountedAssets = '';
   window.OF_LIFE = {
     has: id => !!CFG[id],
     outing: (id, i) => live[id] && live[id].outing(i),
@@ -178,8 +186,17 @@
     bossCheck: () => live.boss && live.boss.check(),
     mount(stage, o, A, ver) {
       ensureCss(); if (!stage) return; const layer = stage.querySelector('.of-anim') || stage;
-      for (const k of Object.keys(live)) { live[k].destroy(); delete live[k]; }
-      for (const d of o.depts || []) { if (!CFG[d.id]) continue; live[d.id] = Agent(layer, d.id, CFG[d.id], A || 'office/', ver || '', d.status === '일하는 중', d.boss ? '' : d.name, d.boss ? (d.lastAt || o.generatedAt) : null); }
+      const assetKey = (A || 'office/') + '|' + (ver || '');
+      const sameLayer = mountedLayer === layer && mountedAssets === assetKey;
+      const ids = new Set((o.depts || []).map(d => d.id));
+      for (const k of Object.keys(live)) { if (!sameLayer || !ids.has(k)) { live[k].destroy(); delete live[k]; } }
+      mountedLayer = layer; mountedAssets = assetKey;
+      for (const d of o.depts || []) {
+        if (!CFG[d.id]) continue;
+        if (live[d.id]) live[d.id].update(d);
+        else live[d.id] = Agent(layer, d.id, CFG[d.id], A || 'office/', ver || '', d.status === '일하는 중', d.boss ? '' : d.name, d.boss ? d.lastAt : null);
+      }
+    
     }
   };
 })();

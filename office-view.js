@@ -2,10 +2,10 @@
 // renderOffice(el, office, { detail: bool, usage: services 객체, bg: 배경 경로 })
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-  const ago = iso => { if (!iso) return ''; const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? '방금' : m < 60 ? m + '분 전' : m < 1440 ? Math.round(m / 60) + '시간 전' : Math.round(m / 1440) + '일 전'; };
-  const until = iso => { if (!iso) return ''; const m = Math.round((Date.parse(iso) - Date.now()) / 60000); return m < 1 ? '곧' : m < 60 ? m + '분 뒤' : Math.round(m / 60) + '시간 뒤'; };
-  const hm = iso => iso ? new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }) : '';
-  const md = iso => iso ? new Date(iso).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }) : '';
+  const ago = iso => { if (!iso || !Number.isFinite(Date.parse(iso))) return ''; const m = Math.round((Date.now() - Date.parse(iso)) / 60000); return m < 1 ? '방금' : m < 60 ? m + '분 전' : m < 1440 ? Math.round(m / 60) + '시간 전' : Math.round(m / 1440) + '일 전'; };
+  const until = iso => { if (!iso || !Number.isFinite(Date.parse(iso))) return ''; const m = Math.round((Date.parse(iso) - Date.now()) / 60000); return m < 1 ? '곧' : m < 60 ? m + '분 뒤' : Math.round(m / 60) + '시간 뒤'; };
+  const hm = iso => iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Seoul' }) : '';
+  const md = iso => iso && Number.isFinite(Date.parse(iso)) ? new Date(iso).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', timeZone: 'Asia/Seoul' }) : '';
   const ICON = { '원장': '<img class="of-av" src="' + (window.OF_AVATAR || 'office/avatar.png') + '" alt="원장">', '너구리': '🦝', '곰': '🐻', '부엉이': '🦉', '토끼': '🐰', '여우': '🦊', '사슴': '🦌', '다람쥐': '🐿️', '수달': '🦦', '고양이': '🐱' };
   const AV = (s = '') => `<img class="of-av ${s}" src="${window.OF_AVATAR || 'office/avatar.png'}" alt="원장">`;
   const ST = { '일하는 중': 'w', '승인 대기': 'a', '쉬는 중': 'r', '확인 필요': 'a', '확인 완료': 'r' };
@@ -185,8 +185,11 @@
 
   window.renderOffice = function (el, o, opt = {}) {
     ensureCss();
-    if (!o || !o.depts) { el.innerHTML = '<div class="of"><div class="of-card">운영실 데이터가 아직 없어요. 다음 갱신(매시 정각) 뒤에 보여요.</div></div>'; return; }
+    if (!o || !Array.isArray(o.depts)) { if (el.querySelector('.of-stage')) return; el.innerHTML = '<div class="of"><div class="of-card">운영실 데이터가 아직 없어요. 다음 갱신(매시 정각) 뒤에 보여요.</div></div>'; return; }
     const det = !!opt.detail, c = o.counts || {};
+    o.boss = o.boss || {};
+    o.boss.todos = o.boss.todos || [];
+    o.boss.done = o.boss.done || [];
     if (!window.OF_TODO_API && o.boss) { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); for (const [t, d] of Object.entries(L)) { const B = o.boss; const inOpen = (B.todos || []).findIndex(x => x.text === t); const inDone = (B.done || []).findIndex(x => x.text === t); if (d && inOpen >= 0) { const x = B.todos.splice(inOpen, 1)[0]; x.doneAt = d; (B.done = B.done || []).unshift(x); } else if (!d && inDone >= 0) { const x = B.done.splice(inDone, 1)[0]; delete x.doneAt; B.todos.push(x); } } }
     /*boss-sync*/ if (o.boss && Array.isArray(o.boss.todos)) { c.todos = o.boss.todos.length; if (Array.isArray(o.boss.approvals)) c.approvals = o.boss.approvals.length; const bd = (o.depts || []).find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
@@ -206,7 +209,7 @@
         <span class="of-chip"><i class="of-dot"></i>쉬는 중 ${c.resting ?? 0}</span>
         <span class="of-chip">· ${ago(o.generatedAt)} 갱신</span><button class="of-bossbtn" data-boss="1">${AV()} 원장실</button></div>
       ${o.depts.filter(d => !d.boss && d.status === '일하는 중').map(d => { const P = PLQ[d.id]; return `<i class="of-glow" style="left:${P ? pct(P.x, OFW) : d.x + '%'};top:${P ? pct(P.y, OFH) : d.y + '%'}"></i>`; }).join('')}
-      ${o.depts.map(d => d.boss ? `<div class="of-tag boss on-bd" data-boss="1" style="left:${pct(BOARD.x, OFW)};top:${pct(BOARD.tagY, OFH)}">` + '' + `${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : PLQ[d.id] ? `<div class="of-plq ${ST[d.status]}${PLQ[d.id].v ? ' v' : ''}" data-dept="${d.id}" title="${esc(d.name + ' · ' + d.status + (det && d.current ? ' · ' + d.current : ''))}" style="left:${pct(PLQ[d.id].x, OFW)};top:${pct(PLQ[d.id].y, OFH)};--r:${PLQ[d.id].r}"><span class="of-pn"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-ps"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span></div>` : `<div class="of-tag ${ST[d.status]}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span>${d.status === '쉬는 중' ? '<span class="of-zz"><span>Z</span><span>z</span><span>z</span></span>' : ''}${det && d.current && d.status === '일하는 중' ? `<span class="of-now">${esc(d.current)}</span>` : ''}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
+      ${o.depts.map(d => d.boss ? `<div class="of-tag boss on-bd" data-boss="1" style="left:${pct(BOARD.x, OFW)};top:${pct(BOARD.tagY, OFH)}">` + '' + `${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : PLQ[d.id] ? `<div class="of-plq ${ST[d.status]}${PLQ[d.id].v ? ' v' : ''}" data-dept="${d.id}" title="${esc(d.name + ' · ' + d.status + (det && d.current ? ' · ' + d.current : ''))}" style="left:${pct(PLQ[d.id].x, OFW)};top:${pct(PLQ[d.id].y, OFH)};--r:${PLQ[d.id].r}"><span class="of-pn"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-ps"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span></div>` : `<div class="of-tag ${ST[d.status]}" data-dept="${esc(d.id)}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span>${d.status === '쉬는 중' ? '<span class="of-zz"><span>Z</span><span>z</span><span>z</span></span>' : ''}${det && d.current && d.status === '일하는 중' ? `<span class="of-now">${esc(d.current)}</span>` : ''}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
     </div>`;
     // 알림
     const appr = det ? (o.approvals || []) : [];
@@ -232,7 +235,18 @@
       const done = (B.done || []);
       return open + `<details class="of-donebox" ${window.__ofDoneOpen ? 'open' : ''}><summary>완료한 일 ${done.length}건</summary>${done.map(t => it(t, true)).join('') || '<div class="of-empty">아직 없어요.</div>'}</details>` + (window.OF_TODO_API ? '' : '<div class="of-lock" style="margin-top:8px">⚠ PC 서버가 꺼져 있어 체크가 이 브라우저에만 저장돼요. start.cmd를 실행하면 할 일 파일에 바로 반영돼요.</div>');
     };
-    const addTodo = async (text, deptId) => {
+    // Hold remote refreshes across the whole write, including local optimistic updates.
+    const todoWrite = fn => async (...args) => {
+      window.__ofTodoWrites = (window.__ofTodoWrites || 0) + 1;
+      window.__ofTodoEpoch = (window.__ofTodoEpoch || 0) + 1;
+      try { return await fn(...args); }
+      finally {
+        window.__ofTodoWrites--;
+        window.__ofTodoEpoch++;
+        if (!window.__ofTodoWrites) window.dispatchEvent(new Event('of-todo-settled'));
+      }
+    };
+    const addTodo = todoWrite(async (text, deptId) => {
       text = (text || '').replace(/[|\r\n]+/g, ' ').trim(); if (!text) return false; const dept = o.depts.find(d => d.id === deptId) || o.depts.find(d => d.boss); window.__ofAddDept = dept.id;
       const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
       if (window.OF_TODO_API) {
@@ -243,8 +257,8 @@
         return true;
       }
       const bot = window.OF_TG_BOT || 'Camelliagrove_kmcbot'; window.open('https://t.me/' + bot + '?text=' + encodeURIComponent('[원장실·할 일] 추가: ' + text + ' (' + dept.name + ')'), '_blank', 'noopener'); return true;
-    };
-    const toggleTodo = async (text, done) => {
+    });
+    const toggleTodo = todoWrite(async (text, done) => {
       const B = o.boss; const from = done ? B.todos : B.done, to = done ? B.done : B.todos; const k = from.findIndex(t => t.text === text); if (k < 0) return;
       const item = from.splice(k, 1)[0]; const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
       if (done) { item.doneAt = today; to.unshift(item); } else { delete item.doneAt; to.push(item); }
@@ -253,7 +267,7 @@
       try { window.renderOffice(el, o, { ...opt, openBoss: undefined }); } catch (e) {}
       if (window.OF_TODO_API) { try { const r = await fetch(window.OF_TODO_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, done }) }); if (!r.ok) throw new Error(r.status); } catch (e) { alert('할 일 파일 저장 실패: ' + e); } }
       else { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); L[text] = done ? today : null; localStorage.setItem('of.todoLocal', JSON.stringify(L)); }
-    };
+    });
     const askBox = (k) => `<div class="of-ask"><div class="of-ask-h">💬 Aside에게 보내기 <span>${k === 'appr' ? '승인·보류·수정 요청을 적어 주세요' : '할 일에 대한 질문이나 지시를 적어 주세요'}</span></div>
       <div class="of-ask-row"><textarea rows="2" placeholder="${k === 'appr' ? '예) 화병 쇼츠 게시 승인 / 발목 염좌 쇼츠는 다음 주로 보류' : '예) 카톡 요약은 손가변증 방 빼고 매일 밤 9시로 해줘'}"></textarea><button class="of-ask-send">보내기</button></div>
       <div class="of-sub">텔레그램이 열리고 메시지가 채워져요. 텔레그램에서 '보내기'를 누르면 Aside가 받아서 처리해요.</div></div>`;
@@ -280,6 +294,10 @@
     const panel = (title, html) => { const m = document.createElement('div'); m.className = 'of-modal'; m.innerHTML = '<div class="of-box"><h2>' + title + '<button>닫기</button></h2><div>' + html + '</div></div>'; m.querySelector('h2 button').onclick = () => m.remove(); m.onclick = e => { if (e.target === m) m.remove(); }; document.body.appendChild(m); };
     const strip = h => h.replace(/^<div class="of-card"><h3>[\s\S]*?<\/h3>/, '').replace(/<\/div>$/, '');
     const boards = [['🔔 승인·게시 대기', alerts, c.approvals, 'a'], ['⚙️ 진행 중인 일', prog, c.running], ['📁 최근 완성 자료', rec, c.recent7d], ['👥 직원 현황', staff], ['⚡ 오늘 사용량', use], ['📝 작업 기록', log]];
+    // Build only the data shell off-DOM. The existing stage/life/snow nodes stay alive.
+    const host = el;
+    const keptStage = host.querySelector('.of-stage');
+    el = document.createElement('div');
     if (window.__ofFull) {
       el.innerHTML = '<div class="of of-full"><div class="of-fswrap">' + stage + '</div><div class="of-dock"><button data-boss="1">' + AV() + ' 원장실' + ((c.todos || 0) + (c.approvals || 0) ? ' <em class="a">' + ((c.todos || 0) + (c.approvals || 0)) + '</em>' : '') + '</button>' + boards.map((b, i) => '<button data-bd="' + i + '">' + b[0] + (b[2] != null ? ' <em class="' + (b[3] && b[2] ? 'a' : '') + '">' + b[2] + '</em>' : '') + '</button>').join('') + '</div></div>';
       el.querySelectorAll('[data-bd]').forEach(b => b.onclick = () => { const x = boards[+b.dataset.bd]; panel(x[0], strip(x[1])); });
@@ -288,13 +306,43 @@
       el.innerHTML = `<div class="of"><div class="of-col">${stage}${log}</div><div class="of-col">${alerts}${prog}${rec}</div><div class="of-col">${staff}${use}</div></div>`;
       document.body.style.overflow = '';
     }
+    const nextStage = el.querySelector('.of-stage');
+    if (keptStage && nextStage) {
+      // These are data-only overlays. Never replace background, actors or seasonal layers.
+      const dataSelector = ':scope > .of-fsbtn, :scope > .of-board, :scope > .of-top, :scope > .of-glow, :scope > .of-tag, :scope > .of-plq';
+      keptStage.querySelectorAll(dataSelector).forEach(n => n.remove());
+      const freshData = new Set(nextStage.querySelectorAll(dataSelector));
+      // Recreate original scene order without moving persistent background/actors/snow.
+      let anchor = keptStage.querySelector(':scope > .of-snow');
+      for (const n of [...nextStage.children].reverse()) {
+        if (freshData.has(n)) { keptStage.insertBefore(n, anchor); anchor = n; }
+        else if (n.classList.contains('of-anim')) anchor = keptStage.querySelector(':scope > .of-anim') || anchor;
+        else if (n.tagName === 'IMG') anchor = keptStage.querySelector(':scope > img') || anchor;
+      }
+    }
+    const oldRoot = host.querySelector('.of'), newRoot = el.querySelector('.of');
+    const sameLayout = keptStage && oldRoot && oldRoot.classList.contains('of-full') === !!window.__ofFull;
+    if (sameLayout) {
+      // Do not even detach the stage on a periodic update: CSS snow/animation timelines survive too.
+      if (window.__ofFull) oldRoot.querySelector('.of-dock').replaceWith(newRoot.querySelector('.of-dock'));
+      else {
+        const oldCols = oldRoot.querySelectorAll(':scope > .of-col'), newCols = newRoot.querySelectorAll(':scope > .of-col');
+        oldCols[0].querySelectorAll(':scope > .of-card').forEach(n => n.remove());
+        newCols[0].querySelectorAll(':scope > .of-card').forEach(n => oldCols[0].appendChild(n));
+        for (let i = 1; i < oldCols.length; i++) oldCols[i].replaceChildren(...newCols[i].childNodes);
+      }
+    } else {
+      if (keptStage && nextStage) nextStage.replaceWith(keptStage);
+      host.replaceChildren(...el.childNodes);
+    }
+    el = host;
     const deptPanel = id => { const d = o.depts.find(x => x.id === id); if (!d) return; const rec = (d.recent || []);
       const body = '<div class="of-sub" style="margin-bottom:8px">' + esc(d.role || '') + ' · 담당 ' + esc(d.model || '') + ' · ' + esc(d.status) + (d.lastAt ? ' · 마지막 작업 ' + ago(d.lastAt) : '') + '</div>' +
         (det ? (rec.length ? rec.map(t => '<div class="of-li"><span class="of-ic">' + (ICON[d.animal] || '•') + '</span><div class="of-t"><b style="white-space:normal">' + esc(t.title) + '</b><span>' + (t.kind === 'routine' ? '자동 작업' : '작업') + ' · ' + md(t.at) + ' ' + hm(t.at) + '</span></div></div>').join('') : '<div class="of-empty">최근 7일 작업이 없어요.</div>') : '<div class="of-big">오늘 ' + (d.today || 0) + '건</div>' + lock('작업'));
       panel((ICON[d.animal] || '') + ' ' + esc(d.name), body); };
     el.querySelectorAll('[data-dept]').forEach(b => b.onclick = e => { e.stopPropagation(); deptPanel(b.dataset.dept); });
-    el.querySelectorAll('.of-tag:not(.boss)').forEach((t, i) => { const d = o.depts.filter(x => !x.boss)[i]; if (d) { t.style.cursor = 'pointer'; t.onclick = () => deptPanel(d.id); } });
-    if (AN && AN.moves.length) runMoves(el, AN.moves);
+
+    if (!keptStage && AN && AN.moves.length) runMoves(el, AN.moves);
     if (AN && window.OF_LIFE) { try { OF_LIFE.mount(el.querySelector('.of-stage'), o, A, AV2); } catch (e) { console.warn('life', e); } }
     el.querySelectorAll('[data-fs]').forEach(b => b.onclick = () => { window.__ofFull = !window.__ofFull; window.renderOffice(el, o, opt); });
     if (!window.__ofEsc) { window.__ofEsc = true; document.addEventListener('keydown', e => { if (e.key === 'Escape' && window.__ofFull && !document.querySelector('.of-modal')) { window.__ofFull = false; window.__ofLast && window.renderOffice(...window.__ofLast); } }); }
@@ -304,3 +352,5 @@
     if (opt.openBoss) openBoss(opt.openBoss);
   };
 })();
+
+
