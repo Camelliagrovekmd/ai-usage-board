@@ -132,6 +132,54 @@ function spark(h,k5,kw){ const pts=(h||[]).filter(x=>x[k5]!=null).slice(-72); if
   const line=k=>pts.map((x,i)=>`${(i/(pts.length-1)*100).toFixed(1)},${(40-(x[k]??0)/100*38).toFixed(1)}`).join(' ');
   return `<svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="var(--acc)" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${line(k5)}"/><polyline fill="none" stroke="var(--mut)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" points="${line(kw)}"/></svg>`; }
 
+// Grok shared weekly quota. Pure helpers: no account access, network, automation or secrets.
+(function(root){
+'use strict';
+const MAX_AGE_MS=120*60000, FUTURE_MS=5*60000;
+const labels={fresh:'보고값 · 최근 확인',stale:'오래된 보고값 · 재확인 필요',expired:'초기화 시각 경과 · 재확인 필요',failed:'확인 실패',invalid:'입력 오류',missing:'보고 파일 없음',unverified:'확인 시각 없는 입력',regressed:'이전 시각 입력 거부',unavailable:'공유 한도 정보 없음 · 모듈 오류','clock-skew':'기기 시계 불일치 · 확인 시각이 기기보다 미래'};
+const isObj=x=>x&&typeof x==='object'&&!Array.isArray(x);
+function stamp(x){ return typeof x==='string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/.test(x) && Number.isFinite(Date.parse(x)) && (()=>{const y=Number(x.slice(0,4)),m=Number(x.slice(5,7)),d=Number(x.slice(8,10));return m>=1&&m<=12&&d>=1&&d<=new Date(Date.UTC(y,m,0)).getUTCDate()&&Number(x.slice(11,13))<24&&Number(x.slice(14,16))<60;})(); }
+function valid(x,now=Date.now(),checkFuture=true){
+ if(!isObj(x)||x.schemaVersion!==1||x.source!=='rogi-report'||x.scope!=='shared-weekly') return false;
+ if(typeof x.plan!=='string'||!x.plan.trim()||x.plan.length>80||/[\x00-\x1f\x7f<>\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/.test(x.plan)) return false;
+ if(![x.usedPct,x.remainingPct].every(n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=100)||Math.abs(x.usedPct+x.remainingPct-100)>0.05) return false;
+ return stamp(x.checkedAt)&&stamp(x.resetsAt)&&(!checkFuture||Date.parse(x.checkedAt)<=now+FUTURE_MS)&&Date.parse(x.resetsAt)>Date.parse(x.checkedAt);
+}
+const validStored=x=>valid(x,0,false);
+const ownLabel=k=>Object.prototype.hasOwnProperty.call(labels,k)?labels[k]:'미확인';
+function pick(x){return {schemaVersion:1,source:'rogi-report',scope:'shared-weekly',plan:x.plan.trim(),usedPct:x.usedPct,remainingPct:x.remainingPct,checkedAt:x.checkedAt,resetsAt:x.resetsAt};}
+function resolve(raw,previous,now=Date.now()){
+ let x=raw,reason=null;
+ if(typeof raw==='string'){try{x=JSON.parse(raw);}catch{reason='invalid';}}
+ if(!reason){ if(x==null) reason='missing'; else if(!isObj(x)) reason='invalid'; else if(x.status==='failed') reason='failed'; else if(!x.checkedAt) reason='unverified'; else if(x.status!=='ok'||!valid(x,now)) reason='invalid'; }
+ const prev=validStored(previous)?pick(previous):null;
+ if(!reason&&prev&&Date.parse(x.checkedAt)<Date.parse(prev.checkedAt)) reason='regressed';
+ const value=reason?prev:pick(x);
+ const ageState=!value?'unverified':Date.parse(value.resetsAt)<=now?'expired':now-Date.parse(value.checkedAt)>MAX_AGE_MS?'stale':'fresh';
+ const state=reason||ageState;
+ return {...(value||{schemaVersion:1,source:'rogi-report',scope:'shared-weekly'}),label:'Grok 주간 한도(공유)',ok:!!value,status:value?'ok':'unknown',state,ageState,stale:state!=='fresh',hasPrevious:!!(reason&&value),lastAttemptState:reason||'ok',note:'실제 계정 한도는 로기 보고 기반. Aside 토큰 집계와 별개이며 직접 조회·실시간 보장 아님.'};
+}
+function view(s,now=Date.now()){
+ if(!isObj(s)) return resolve(null,null,now);
+ // Display revalidates shape, not ingestion-time future checks against a different device clock.
+ const value=s.ok===true&&validStored(s)?pick(s):null;
+ const clockSkew=!!value&&Date.parse(value.checkedAt)>now+FUTURE_MS;
+ const ageState=!value?'unverified':clockSkew?'clock-skew':Date.parse(value.resetsAt)<=now?'expired':now-Date.parse(value.checkedAt)>MAX_AGE_MS?'stale':'fresh';
+ const attempt=typeof s.lastAttemptState==='string'&&s.lastAttemptState!=='ok'?s.lastAttemptState:null;
+ return {...s,...(value||{}),ok:!!value,hasPrevious:!!value&&!!attempt,clockSkew,ageState,state:attempt||(!value?'unverified':ageState),stale:!!attempt||ageState!=='fresh'};
+}
+function statusText(v){
+ const base=ownLabel(v.state);
+ const msg=!v.ok?base+' · 이전 정상값 없음':v.hasPrevious?(v.state==='unverified'?'확인 시각 없는 입력 · 마지막 정상값':base+' · 이전 정상값'):base;
+ return msg+(v.hasPrevious&&v.ageState!=='fresh'?' · '+ownLabel(v.ageState):'');
+}
+const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const date=x=>stamp(x)?new Date(x).toLocaleString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false})+' KST':'정보 없음';
+function text(s,now){const v=view(s,now);return 'Grok 주간 한도(공유): '+statusText(v)+(v.ok?' · '+v.plan+' · 사용 '+v.usedPct+'% / 남음 '+v.remainingPct+'%':' · 수치 정보 없음')+' · 초기화 '+date(v.resetsAt)+' · 확인 '+date(v.checkedAt)+' · 로기 보고 기반, Aside 토큰 아님';}
+function html(s,now){const v=view(s,now);return '<div class="card" data-quota="grok-shared"><h2>Grok 주간 한도(공유)</h2><div class="sub" style="white-space:normal">'+esc(statusText(v))+'</div>'+(v.ok?'<div class="kv"><span>플랜 / 한도</span><b>'+esc(v.plan)+' / 주간 공유 한도</b><span>주간 사용 / 남음</span><b>'+v.usedPct+'% / '+v.remainingPct+'%</b><span>초기화 시각</span><b>'+esc(date(v.resetsAt))+'</b><span>보고 확인 시각</span><b>'+esc(date(v.checkedAt))+'</b></div>':'<div class="sub">수치 정보 없음 · 확인 시각 없음 또는 유효한 보고 없음</div>')+'<div class="sub" style="white-space:normal">실제 계정 한도는 로기 보고 기반. Aside 토큰 집계와 별개. 직접 조회·실시간 보장 아님. 120분 초과 또는 초기화 시각 경과 시 재확인 필요.</div></div>';}
+const api={resolve,view,text,html,valid,validStored,MAX_AGE_MS};root.GrokSharedQuota=api;if(typeof module==='object'&&module.exports)module.exports=api;
+})(globalThis);
+
 const safeHtml = x => String(x ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function grokBody(s, at) {
   const safe = x => String(x ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -151,7 +199,7 @@ function grokBody(s, at) {
       '<div class="models">7일 모델별 기록'+Object.entries(s.extra?.byModel || {}).map(([m,v])=>'<div><span>'+safe(m)+'</span><span>'+number(v.tokens)+' 토큰 · '+number(v.turns)+'턴</span></div>').join('')+'</div>');
 }
 
-function card(k,s,d){ if(k==='grok') return '<div class="card"><h2>그록 · 어사이드 기록</h2>'+grokBody(s || {ok:false}, d.updatedAt?.grok)+'</div>'; if(!s) return ''; const at=d.updatedAt?.[k]; const age=at?`<span class="pill">${ago(at)}</span>`:'';
+function card(k,s,d){ if(k==='grokShared') return GrokSharedQuota.html(s); if(k==='grok') return '<div class="card"><h2>그록 · 어사이드 기록</h2>'+grokBody(s || {ok:false}, d.updatedAt?.grok)+'</div>'; if(!s) return ''; const at=d.updatedAt?.[k]; const age=at?`<span class="pill">${ago(at)}</span>`:'';
   let body='';
   const partialWarning = s.partial ? '<div class="sub" style="color:var(--warn)">부분 집계: 시간 예산 또는 탐색 상한으로 기록 누락 가능.</div>' : '';
   if(!s.ok) body=`<div class="sub" style="color:var(--bad)">${safeHtml(s.error||'조회 실패')}</div>`;
@@ -193,7 +241,7 @@ function render(d){
   renderCtl(d.control);
   renderWl(d.worklog);
   $('#advice').textContent=d.advice||'';
-  $('#grid').innerHTML=['claude','gpt','aside','grok'].map(k=>card(k,d.services?.[k],d)).join('');
+  $('#grid').innerHTML=['claude','gpt','aside','grokShared','grok'].map(k=>card(k,d.services?.[k],d)).join('');
   $('#meta').innerHTML=`${ago(d.generatedAt)} 갱신<br>${new Date(d.generatedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
   const old=(Date.now()-Date.parse(d.generatedAt))/60000;
   $('#stale').style.display=old>150?'block':'none';
