@@ -191,7 +191,7 @@
     o.boss.todos = o.boss.todos || [];
     o.boss.done = o.boss.done || [];
     if (!window.OF_TODO_API && o.boss) { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); for (const [t, d] of Object.entries(L)) { const B = o.boss; const inOpen = (B.todos || []).findIndex(x => x.text === t); const inDone = (B.done || []).findIndex(x => x.text === t); if (d && inOpen >= 0) { const x = B.todos.splice(inOpen, 1)[0]; x.doneAt = d; (B.done = B.done || []).unshift(x); } else if (!d && inDone >= 0) { const x = B.done.splice(inDone, 1)[0]; delete x.doneAt; B.todos.push(x); } } }
-    /*boss-sync*/ if (o.boss && Array.isArray(o.boss.todos)) { c.todos = o.boss.todos.length; if (Array.isArray(o.boss.approvals)) c.approvals = o.boss.approvals.length; const bd = (o.depts || []).find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
+    /*boss-sync*/ if (det && o.boss && Array.isArray(o.boss.todos)) { c.todos = o.boss.todos.length; if (Array.isArray(o.boss.approvals)) c.approvals = o.boss.approvals.length; const bd = (o.depts || []).find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
     const A = opt.assets || 'office/', AV2 = opt.assetVer || ''; const AN = opt.anim !== false && !!(opt.anim || window.OF_ANIM) ? animLayer(o, A, AV2) : null;
     const B0 = o.boss || {}; const nTodo = c.todos ?? (B0.todos || []).length, nAppr = c.approvals ?? 0, nRep = c.reports ?? (B0.reports || []).length; const brAt = c.briefingAt ? (md(c.briefingAt) === md(new Date().toISOString()) ? '오늘 ' + hm(c.briefingAt) : md(c.briefingAt)) : '';
