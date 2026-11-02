@@ -107,7 +107,7 @@
 <script>if(new URLSearchParams(location.search).get('full')==='1'){window.__ofFull=true;try{localStorage.setItem('aiusage.tab','office')}catch(e){}}</script>
 <script>window.OF_ANIM=true</script>
 <script src="office-life.js?v=1793614358816"></script>
-<script src="office-view.js?v=1793615295343"></script>
+<script src="office-view.js?v=1793616469733"></script>
 <script>
 const $ = s => document.querySelector(s);
 const KEY = 'aiusage.pw';
@@ -131,17 +131,38 @@ function bar(label,w){ if(!w) return ''; const p=w.usedPct;
 function spark(h,k5,kw){ const pts=(h||[]).filter(x=>x[k5]!=null).slice(-72); if(pts.length<2) return '';
   const line=k=>pts.map((x,i)=>`${(i/(pts.length-1)*100).toFixed(1)},${(40-(x[k]??0)/100*38).toFixed(1)}`).join(' ');
   return `<svg class="spark" viewBox="0 0 100 40" preserveAspectRatio="none"><polyline fill="none" stroke="var(--acc)" stroke-width="1.6" vector-effect="non-scaling-stroke" points="${line(k5)}"/><polyline fill="none" stroke="var(--mut)" stroke-width="1" stroke-dasharray="3 2" vector-effect="non-scaling-stroke" points="${line(kw)}"/></svg>`; }
-function card(k,s,d){ if(!s) return ''; const at=d.updatedAt?.[k]; const age=at?`<span class="pill">${ago(at)}</span>`:'';
+
+const safeHtml = x => String(x ?? '').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function grokBody(s, at) {
+  const safe = x => String(x ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const number = n => typeof n === 'number' && Number.isFinite(n) ? n.toLocaleString('ko-KR') : '정보 없음';
+  const stamp = at || s.observedAt;
+  const old = !stamp || !Number.isFinite(Date.parse(stamp)) || Date.now() - Date.parse(stamp) > 120*60000;
+  const row = (label, w) => !w ? '<div class="sub">'+label+': 정보 없음</div>' : '<div class="row"><b>'+label+' rolling</b><div class="kv"><span>기록된 토큰 / 기록 턴</span><b>'+number(w.tokens)+' / '+number(w.turns)+'턴</b><span>usage 있음 / 없음</span><b>'+number(w.usageTurns)+' / '+number(w.missingUsageTurns)+'턴</b><span>usage 있으나 totalTokens 누락</span><b>'+number(w.missingTotalTokensTurns)+'턴</b><span>세션 모델로 추론</span><b>'+number(w.inferredModelTurns)+'턴</b></div></div>';
+  const cv = s.extra?.coverage || {};
+  const hr = s.historyRecord;
+  const recordText = hr?.status === 'saved' && hr.file ? '개별 스냅샷 저장 확인' : hr?.status === 'failed' ? '개별 스냅샷 저장 실패' : hr?.status === 'saved-superseded' ? '구실행 개별 스냅샷 저장됨 (최신값 아님)' : '개별 스냅샷 저장 상태 정보 없음';
+  return '<div class="sub" style="white-space:normal">Aside 기록 기준, 계정 전체 사용량·남은 한도 아님. 기록 누락 가능. 리셋/퍼센트 모름. 누락 수치는 0 사용이 아닙니다.</div>' +
+    ((!s.ok || s.stale || old) ? '<div class="sub" style="white-space:normal;color:var(--warn)">'+(!s.ok ? '조회 실패 · 정보 없음' : s.stale ? '조회 실패 · 마지막 정상 기록' : '오래된 기록 (120분 초과 또는 시각 없음)')+'</div>' : '') +
+    (stamp ? '<div class="sub">집계 기준 시각: '+safe(new Date(stamp).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'}))+'</div>' : '') +
+    '<div class="sub">'+recordText+(hr?.snapshotState ? ' · '+safe(hr.snapshotState) : '')+' (과거 차트 아님)</div>' +
+    (!s.ok ? '' : '<div class="sub" style="white-space:normal;color:var(--warn)">수집 범위: visible non-archived root newest first + 발견한 childSessions. 숨김·보관 루틴 제외 가능. cursor/정렬 불확실, 완전 수집 보장 안 됨.</div>' + row('최근 5시간', s.fiveHour) + row('최근 7일', s.weekly) +
+      '<div class="sub" style="white-space:normal">집계 탐색 coverage (시각 미상은 기간 미확정): 시각 미상 '+number(cv.unknownTimeTurns)+'턴, 모델 미상 '+number(cv.unknownModelTurns)+'턴(전체 Aside), assistant 기록 없는 Grok 세션 '+number(cv.sessionsWithoutAssistantRecords7d)+'개, usage 전무 Grok 세션 '+number(cv.sessionsWithoutUsage7d)+'개. 5,000건 도달 시 이전 기록 누락 가능 · 도달 세션 '+number(cv.messageLimitSessions)+'개'+(cv.sessionScanLimitReached ? ' · 세션 탐색 상한 도달' : '')+'. 미래 시각 제외 '+number(cv.futureTimestampTurns)+'턴. '+(cv.timeBudgetHit ? '45초 이내 시간 예산 도달: 부분 집계. ' : '')+(cv.duplicatePageDetected ? '중복 페이지/커서 정체로 중단. ' : '')+(cv.orderingUncertain ? 'updatedAt 정렬 불일치. ' : '')+(cv.defaultSettingsUnavailable ? '기본 설정 조회 불가. ' : '')+'세션 모델 추론은 모델 변경 시 부정확할 수 있습니다.</div>' +
+      '<div class="models">7일 모델별 기록'+Object.entries(s.extra?.byModel || {}).map(([m,v])=>'<div><span>'+safe(m)+'</span><span>'+number(v.tokens)+' 토큰 · '+number(v.turns)+'턴</span></div>').join('')+'</div>');
+}
+
+function card(k,s,d){ if(k==='grok') return '<div class="card"><h2>Grok · Aside 기록</h2>'+grokBody(s || {ok:false}, d.updatedAt?.grok)+'</div>'; if(!s) return ''; const at=d.updatedAt?.[k]; const age=at?`<span class="pill">${ago(at)}</span>`:'';
   let body='';
-  if(!s.ok) body=`<div class="sub" style="color:var(--bad)">${s.error||'조회 실패'}</div>`;
+  const partialWarning = s.partial ? '<div class="sub" style="color:var(--warn)">부분 집계: 시간 예산 또는 탐색 상한으로 기록 누락 가능.</div>' : '';
+  if(!s.ok) body=`<div class="sub" style="color:var(--bad)">${safeHtml(s.error||'조회 실패')}</div>`;
   else if(k==='aside'){ const f=s.fiveHour,w=s.weekly,m=s.extra?.byModel||{};
     body=`<div class="kv"><span>최근 5시간</span><b>${fmtTok(f.tokens)} 토큰 · ${f.turns}턴</b><span>최근 7일</span><b>${fmtTok(w.tokens)} 토큰 · ${w.turns}턴</b><span>API 환산(7일)</span><b>$${w.costUsd}</b></div>
-    <div class="models">${Object.entries(m).sort((a,b)=>b[1].tokens-a[1].tokens).slice(0,5).map(([n,v])=>`<div><span>${n}</span><span>${fmtTok(v.tokens)}</span></div>`).join('')}</div>`; }
+    <div class="models">${Object.entries(m).sort((a,b)=>b[1].tokens-a[1].tokens).slice(0,5).map(([n,v])=>`<div><span>${safeHtml(n)}</span><span>${fmtTok(v.tokens)}</span></div>`).join('')}</div>`; }
   else { body=bar('5시간 한도',s.fiveHour)+bar('주간 한도',s.weekly); const ex=s.extra||{};
     if(ex.weeklyOpus) body+=bar('주간 Opus',ex.weeklyOpus);
     if(ex.resetCoupons!=null) body+=`<div class="kv"><span>한도 초기화 쿠폰</span><b>${ex.resetCoupons}개</b></div>`;
     body+= k==='claude'?spark(d.history,'claude5h','claudeW'):spark(d.history,'gpt5h','gptW'); }
-  return `<div class="card"><h2>${s.label}<span class="pill">${s.plan||''}</span>${age}</h2><div class="sub">${s.account||''}</div>${body}</div>`; }
+  return `<div class="card"><h2>${safeHtml(s.label)}<span class="pill">${safeHtml(s.plan||'')}</span>${age}</h2><div class="sub">${safeHtml(s.account||'')}</div>${partialWarning}${body}</div>`; }
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const stPill=s=>s==='running'?'<span class="st run">진행 중</span>':s==='errored'?'<span class="st err">오류</span>':'<span class="st ok">완료</span>';
 function when(iso){ if(!iso) return '-'; return new Date(iso).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
@@ -172,7 +193,7 @@ function render(d){
   renderCtl(d.control);
   renderWl(d.worklog);
   $('#advice').textContent=d.advice||'';
-  $('#grid').innerHTML=['claude','gpt','aside'].map(k=>card(k,d.services?.[k],d)).join('');
+  $('#grid').innerHTML=['claude','gpt','aside','grok'].map(k=>card(k,d.services?.[k],d)).join('');
   $('#meta').innerHTML=`${ago(d.generatedAt)} 갱신<br>${new Date(d.generatedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;
   const old=(Date.now()-Date.parse(d.generatedAt))/60000;
   $('#stale').style.display=old>150?'block':'none';

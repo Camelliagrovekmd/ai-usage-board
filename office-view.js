@@ -362,6 +362,10 @@ window.OF_SEASON = window.OF_SEASON || { nightFrom: 18, nightTo: 7, snow: true }
   css.textContent = '.of-stage.of-night .lf-pose,.of-stage.of-night .lf-walk,.of-stage.of-night .of-sp,.of-stage.of-night .of-seat{filter:brightness(.92) sepia(.14) saturate(1.06)}'
     + '.of-snow{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0;transition:opacity 4s}.of-snow.on{opacity:1}'
     + '.of-snow i{position:absolute;top:-2%;width:.35%;aspect-ratio:1;border-radius:50%;background:#fff;box-shadow:0 0 4px rgba(255,255,255,.9);animation:ofsnow linear infinite}'
+    + '.of-stars{position:absolute;left:60%;top:1%;width:37%;height:7%;overflow:hidden;pointer-events:none;z-index:0;display:none}.of-stage.of-night>.of-stars{display:block}'
+    + '.of-stars i{position:absolute;display:block;width:clamp(1px,.16cqw,3px);aspect-ratio:1;border-radius:50%;background:#fff8df;box-shadow:0 0 3px rgba(255,244,209,.45);opacity:.4;transform:scale(.85);animation:ofStarTwinkle 9s ease-in-out infinite}'
+    + '@keyframes ofStarTwinkle{0%,100%{opacity:.22;transform:scale(.75)}50%{opacity:.72;transform:scale(1.15)}}'
+    + '@media(prefers-reduced-motion:reduce){.of-stars i{animation:none;opacity:.48;transform:scale(1)}}'
     + '@keyframes ofsnow{from{transform:translate(0,0)}to{transform:translate(1.5vw,42vh)}}';
   document.head.appendChild(css);
   // 창문 영역(1672x941 기준 %): 왼쪽 큰 창, 오른쪽 위 창
@@ -382,6 +386,22 @@ window.OF_SEASON = window.OF_SEASON || { nightFrom: 18, nightTo: 7, snow: true }
           for (let k = 0; k < 45; k++) { const f = document.createElement('i'); f.style.left = (Math.random() * 100) + '%'; f.style.animationDuration = (9 + Math.random() * 9) + 's'; f.style.animationDelay = (-Math.random() * 18) + 's'; f.style.opacity = (.5 + Math.random() * .5); f.style.width = (.2 + Math.random() * .3) + '%'; box.appendChild(f); }
           sn.appendChild(box); }
         st.appendChild(sn);
+      }
+      // Independent sky-only overlay: preserve snow, actors and all existing layer order.
+      let stars = st.querySelector(':scope > .of-stars');
+      if (!stars) {
+        stars = document.createElement('div'); stars.className = 'of-stars';
+        stars.setAttribute('aria-hidden', 'true');
+        // Coordinates are local to x60..97%, y1..8% of the full stage.
+        const points = [[4,25],[13,68],[23,16],[32,49],[41,78],[50,30],[59,61],[68,14],[77,43],[86,76],[94,28]];
+        points.forEach(([x,y], i) => {
+          const star = document.createElement('i');
+          star.style.left = x + '%'; star.style.top = y + '%';
+          star.style.animationDuration = (7 + (i * 3 % 8)) + 's';
+          star.style.animationDelay = (-i * 1.73) + 's';
+          stars.appendChild(star);
+        });
+        st.appendChild(stars);
       }
       // 밤에만, 약 10분 주기로 4분 정도 눈
       if (sn) sn.classList.toggle('on', n && (window.OF_SEASON.snowAlways || (Math.floor(Date.now() / 60000) % 10) < 4));
