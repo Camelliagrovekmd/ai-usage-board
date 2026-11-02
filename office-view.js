@@ -353,4 +353,42 @@
   };
 })();
 
+// ===== 크리스마스 낮/밤 전환 + 창밖 눈 (2026-11-02) =====
+// 밤: 18:00~06:59 (PC 시각). 배경·가림조각을 *_night.webp로, 캐릭터에 은은한 저녁 조명.
+window.OF_SEASON = window.OF_SEASON || { nightFrom: 18, nightTo: 7, snow: true };
+(function () {
+  if (window.__ofDayNight) return; window.__ofDayNight = true;
+  const css = document.createElement('style');
+  css.textContent = '.of-stage.of-night .lf-pose,.of-stage.of-night .lf-walk,.of-stage.of-night .of-sp,.of-stage.of-night .of-seat{filter:brightness(.92) sepia(.14) saturate(1.06)}'
+    + '.of-snow{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0;transition:opacity 4s}.of-snow.on{opacity:1}'
+    + '.of-snow i{position:absolute;top:-2%;width:.35%;aspect-ratio:1;border-radius:50%;background:#fff;box-shadow:0 0 4px rgba(255,255,255,.9);animation:ofsnow linear infinite}'
+    + '@keyframes ofsnow{from{transform:translate(0,0)}to{transform:translate(1.5vw,42vh)}}';
+  document.head.appendChild(css);
+  // 창문 영역(1672x941 기준 %): 왼쪽 큰 창, 오른쪽 위 창
+  const CLIP = 'polygon(0% 0%,29.6% 0%,29.6% 22%,6% 41%,0% 44%), polygon(56% 0%,100% 0%,100% 30%,88% 26%,66% 14%,56% 9%)';
+  const night = () => { const h = new Date().getHours(), s = window.OF_SEASON; return s.nightFrom > s.nightTo ? (h >= s.nightFrom || h < s.nightTo) : (h >= s.nightFrom && h < s.nightTo); };
+  const swap = (src, n) => n ? src.replace(/(office_empty|\/ov(?:_table|_monitor)?)(_night)?\.webp/, '$1_night.webp') : src.replace(/_night\.webp/, '.webp');
+  function apply() {
+    const n = night();
+    document.querySelectorAll('.of-stage').forEach(st => {
+      st.classList.toggle('of-night', n);
+      const bg = st.querySelector(':scope > img'); if (bg && /office_empty/.test(bg.src)) { const s2 = swap(bg.src, n); if (s2 !== bg.src) bg.src = s2; }
+      st.querySelectorAll('.lf-ov').forEach(o => { const s2 = swap(o.src, n); if (s2 !== o.src) o.src = s2; });
+      let sn = st.querySelector(':scope > .of-snow');
+      if (!sn && window.OF_SEASON.snow) {
+        sn = document.createElement('div'); sn.className = 'of-snow';
+        const parts = CLIP.split('), ').map((p, i) => p + (i ? '' : ')'));
+        for (const p of parts) { const box = document.createElement('div'); box.style.cssText = 'position:absolute;inset:0;clip-path:' + p;
+          for (let k = 0; k < 45; k++) { const f = document.createElement('i'); f.style.left = (Math.random() * 100) + '%'; f.style.animationDuration = (9 + Math.random() * 9) + 's'; f.style.animationDelay = (-Math.random() * 18) + 's'; f.style.opacity = (.5 + Math.random() * .5); f.style.width = (.2 + Math.random() * .3) + '%'; box.appendChild(f); }
+          sn.appendChild(box); }
+        st.appendChild(sn);
+      }
+      // 밤에만, 약 10분 주기로 4분 정도 눈
+      if (sn) sn.classList.toggle('on', n && (window.OF_SEASON.snowAlways || (Math.floor(Date.now() / 60000) % 10) < 4));
+    });
+  }
+  window.OF_DAYNIGHT = apply;
+  setInterval(apply, 30000);
+  new MutationObserver(() => { clearTimeout(window.__ofDnT); window.__ofDnT = setTimeout(apply, 200); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
 
