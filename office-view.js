@@ -192,6 +192,10 @@
     o.boss.done = o.boss.done || [];
     if (!window.OF_TODO_API && o.boss) { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); for (const [t, d] of Object.entries(L)) { const B = o.boss; const inOpen = (B.todos || []).findIndex(x => x.text === t); const inDone = (B.done || []).findIndex(x => x.text === t); if (d && inOpen >= 0) { const x = B.todos.splice(inOpen, 1)[0]; x.doneAt = d; (B.done = B.done || []).unshift(x); } else if (!d && inDone >= 0) { const x = B.done.splice(inDone, 1)[0]; delete x.doneAt; B.todos.push(x); } } }
     /*boss-sync*/ if (det && o.boss && Array.isArray(o.boss.todos)) { c.todos = o.boss.todos.length; if (Array.isArray(o.boss.approvals)) c.approvals = o.boss.approvals.length; const bd = (o.depts || []).find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
+    // 원장님 확인 필요(attention): 상세에서만 목록 길이로 동기화, 공개는 저장된 숫자 유지. 배지 = 할 일 + 확인 필요(없는 예전 데이터는 waiting).
+    const bossN = () => { const bd = (o.depts || []).find(d => d.boss); if (!bd) return (c.todos || 0) + (c.approvals || 0); return bd.attention != null ? (c.todos || 0) + (bd.attention || 0) : (bd.waiting || 0); };
+    /*attention-sync*/ if (det && o.boss && Array.isArray(o.boss.attention)) { c.attention = o.boss.attention.length; const bd = (o.depts || []).find(d => d.boss); if (bd) { bd.attention = c.attention; bd.status = bossN() ? '확인 필요' : '확인 완료'; } }
+    // 멈춤 의심 숫자는 서버 stuck.counts를 그대로 신뢰 (상세 목록은 최대 30개로 잘려 있으므로 재집계하지 않음)
     const lock = t => `<div class="of-lock">🔒 ${t} 목록은 PC 전용 화면에서만 보여요.</div>`;
     const A = opt.assets || 'office/', AV2 = opt.assetVer || ''; const AN = opt.anim !== false && !!(opt.anim || window.OF_ANIM) ? animLayer(o, A, AV2) : null;
     const B0 = o.boss || {}; const nTodo = c.todos ?? (B0.todos || []).length, nAppr = c.approvals ?? 0, nRep = c.reports ?? (B0.reports || []).length; const brAt = c.briefingAt ? (md(c.briefingAt) === md(new Date().toISOString()) ? '오늘 ' + hm(c.briefingAt) : md(c.briefingAt)) : '';
@@ -209,14 +213,25 @@
         <span class="of-chip"><i class="of-dot"></i>쉬는 중 ${c.resting ?? 0}</span>
         <span class="of-chip">· ${ago(o.generatedAt)} 갱신</span><button class="of-bossbtn" data-boss="1">${AV()} 원장실</button></div>
       ${o.depts.filter(d => !d.boss && d.status === '일하는 중').map(d => { const P = PLQ[d.id]; return `<i class="of-glow" style="left:${P ? pct(P.x, OFW) : d.x + '%'};top:${P ? pct(P.y, OFH) : d.y + '%'}"></i>`; }).join('')}
-      ${o.depts.map(d => d.boss ? `<div class="of-tag boss on-bd" data-boss="1" style="left:${pct(BOARD.x, OFW)};top:${pct(BOARD.tagY, OFH)}">` + '' + `${AV('lg')} 원장실 ${d.waiting ? `<span class="of-cnt">${d.waiting}</span>` : ''}<small>눌러서 보기</small></div>` : PLQ[d.id] ? `<div class="of-plq ${ST[d.status]}${PLQ[d.id].v ? ' v' : ''}" data-dept="${d.id}" title="${esc(d.name + ' · ' + d.status + (det && d.current ? ' · ' + d.current : ''))}" style="left:${pct(PLQ[d.id].x, OFW)};top:${pct(PLQ[d.id].y, OFH)};--r:${PLQ[d.id].r}"><span class="of-pn"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-ps"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span></div>` : `<div class="of-tag ${ST[d.status]}" data-dept="${esc(d.id)}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span>${d.status === '쉬는 중' ? '<span class="of-zz"><span>Z</span><span>z</span><span>z</span></span>' : ''}${det && d.current && d.status === '일하는 중' ? `<span class="of-now">${esc(d.current)}</span>` : ''}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
+      ${o.depts.map(d => d.boss ? `<div class="of-tag boss on-bd" data-boss="1" style="left:${pct(BOARD.x, OFW)};top:${pct(BOARD.tagY, OFH)}">` + '' + `${AV('lg')} 원장실 ${bossN() ? `<span class="of-cnt" title="할 일 ${c.todos ?? 0} · 확인 필요 ${c.attention ?? c.approvals ?? 0}">${bossN()}</span>` : ''}<small>눌러서 보기</small></div>` : PLQ[d.id] ? `<div class="of-plq ${ST[d.status]}${PLQ[d.id].v ? ' v' : ''}" data-dept="${d.id}" title="${esc(d.name + ' · ' + d.status + (det && d.current ? ' · ' + d.current : ''))}" style="left:${pct(PLQ[d.id].x, OFW)};top:${pct(PLQ[d.id].y, OFH)};--r:${PLQ[d.id].r}"><span class="of-pn"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-ps"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span></div>` : `<div class="of-tag ${ST[d.status]}" data-dept="${esc(d.id)}" style="left:${d.x}%;top:${d.y}%"><span class="of-l1"><i class="of-dot ${ST[d.status]}"></i>${esc(d.name)}</span><span class="of-l2"><b>${d.status === '승인 대기' ? '! ' : ''}${esc(d.status)}</b>${d.status === '일하는 중' ? '<span class="of-dots"><i></i><i></i><i></i></span>' : ''}${badge(d.model)}</span>${d.status === '쉬는 중' ? '<span class="of-zz"><span>Z</span><span>z</span><span>z</span></span>' : ''}${det && d.current && d.status === '일하는 중' ? `<span class="of-now">${esc(d.current)}</span>` : ''}${det && d.current ? `<span class="of-cur">${esc(d.current)}</span>` : ''}</div>`).join('')}
     </div>`;
     // 알림
     const appr = det ? (o.approvals || []) : [];
     const alerts = `<div class="of-card"><h3>🔔 승인·게시 대기<span class="of-n ${c.approvals ? 'a' : ''}">${c.approvals ?? 0}</span></h3>
       ${det ? (appr.length ? appr.map(a => `<div class="of-li"><span class="of-ic">${dicon(o, a.dept)}</span><div class="of-t"><b>${esc(a.title)}</b><span>${esc(dname(o, a.dept))}${a.due ? ' · ' + esc(a.due) : ''}</span></div></div>`).join('') : '<div class="of-empty">대기 중인 항목이 없어요.</div>')
         : `<div class="of-big">${c.approvals ?? 0}건</div>` + lock('대기 항목')}</div>`;
-    const prog = `<div class="of-card"><h3>⚙️ 진행 중인 일<span class="of-n">${(c.running ?? 0)}</span></h3>
+    // 원장님 확인 필요 모아보기 (상세: 목록 / 공개: 숫자만)
+    const chkList = det ? ((o.boss && o.boss.attention) || []) : [];
+    const chkItems = L => L.map(a => `<div class="of-li"><span class="of-ic">${dicon(o, a.dept)}</span><div class="of-t"><b style="white-space:normal">${esc(a.title)}</b><span>${esc(a.type)} · ${esc(a.source || '')}${a.at ? ' · ' + (/^\d{4}-\d{2}-\d{2}$/.test(a.at) ? esc(a.at) : md(a.at) + ' ' + hm(a.at)) : ''}</span></div></div>`).join('');
+    const chkNum = c.attention ?? null;
+    const hasChk = c.attention !== undefined || Array.isArray(o.boss && o.boss.attention); // 예전 데이터에는 카드 숨김
+    const chkCard = !hasChk ? '' : `<div class="of-card"><h3>🧭 원장님 확인 필요<span class="of-n ${chkNum ? 'a' : ''}">${chkNum ?? '-'}</span></h3>
+      ${det ? (chkList.length ? chkItems(chkList) : '<div class="of-empty">확인할 항목이 없어요.</div>') : `<div class="of-big">${chkNum ?? '-'}건</div>` + lock('확인 항목')}</div>`;
+    // 멈춤 의심 (상세: 목록 / 공개: 숫자만). null이면 미확인
+    const stuckN = c.stuck, stuckU = c.stuckUnknown || 0;
+    const stuckLine = stuckN === undefined ? '' : stuckN === null ? '<div class="of-sub" style="margin-bottom:6px">⚠ 멈춤 여부 미확인</div>'
+      : (det ? (() => { const L = (o.stuck && o.stuck.items) || []; const more = Math.max(0, (stuckN || 0) + stuckU - L.length); return L.map(s => `<div class="of-li"><span class="of-ic">⚠</span><div class="of-t"><b style="white-space:normal">${esc(s.title)}</b><span>${esc(s.label)} · ${esc(s.why || '')}${s.kind === 'routine' ? ' · 루틴' : ''}</span></div></div>`).join('') + (more ? '<div class="of-sub" style="margin:4px 0 6px">… 외 ' + more + '건 더 있음 (목록 생략)</div>' : ''); })() : (stuckN || stuckU ? `<div class="of-sub" style="margin-bottom:6px">⚠ 멈춤 의심 ${stuckN}${stuckU ? ' · 미확인 ' + stuckU : ''}</div>` : ''));
+    const prog = `<div class="of-card"><h3>⚙️ 진행 중인 일<span class="of-n">${(c.running ?? 0)}</span>${stuckN ? `<span class="of-n a" title="멈춤 의심">⚠ ${stuckN}</span>` : ''}</h3>${stuckLine}
       ${det ? ([...(o.running || []), ...(o.upcoming || [])].map(t => `<div class="of-li"><span class="of-ic">${dicon(o, t.dept)}</span><div class="of-t"><b>${esc(t.title)}</b><span>${esc(dname(o, t.dept))} · ${t.state === '예정' ? '예정 ' + hm(t.at) + ' (' + until(t.at) + ')' : '작업 중 · ' + ago(t.at)}</span></div></div>`).join('') || '<div class="of-empty">지금 진행 중인 일이 없어요.</div>')
         : `<div class="of-num"><div><div class="of-big">${c.running ?? 0}</div><div class="of-sub">작업 중</div></div><div><div class="of-big">${c.upcoming ?? 0}</div><div class="of-sub">24시간 내 예정</div></div></div>` + lock('작업')}</div>`;
     const rec = `<div class="of-card"><h3>📁 최근 완성 자료<span class="of-n">${c.recent7d ?? 0}</span></h3>
@@ -263,7 +278,7 @@
       const item = from.splice(k, 1)[0]; const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
       if (done) { item.doneAt = today; to.unshift(item); } else { delete item.doneAt; to.push(item); }
       c.todos = B.todos.length; c.doneTodos = B.done.length;
-      { const bd = o.depts.find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bd.waiting ? '확인 필요' : '확인 완료'; } }
+      { const bd = o.depts.find(d => d.boss); if (bd) { bd.waiting = (c.todos || 0) + (c.approvals || 0); bd.status = bossN() ? '확인 필요' : '확인 완료'; } }
       try { window.renderOffice(el, o, { ...opt, openBoss: undefined }); } catch (e) {}
       if (window.OF_TODO_API) { try { const r = await fetch(window.OF_TODO_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, done }) }); if (!r.ok) throw new Error(r.status); } catch (e) { alert('할 일 파일 저장 실패: ' + e); } }
       else { const L = JSON.parse(localStorage.getItem('of.todoLocal') || '{}'); L[text] = done ? today : null; localStorage.setItem('of.todoLocal', JSON.stringify(L)); }
@@ -275,13 +290,14 @@
     const openBoss = (tab) => {
       const B = o.boss || {}, n = c, br = B.briefing;
       const sec = {
+        chk: ['🧭 확인 필요', det ? (chkList.length ? `<div class="of-sub" style="margin-bottom:6px">승인·게시 대기, 게시완료인데 링크가 없는 글, 원장님 응답을 기다리는 Aside 작업, 오류로 끝난 루틴을 한곳에 모았어요.</div>` + chkItems(chkList) : '<div class="of-empty">확인할 항목이 없어요. 👍</div>') : `<div class="of-big">${n.attention ?? '-'}건</div>` + lock('확인 항목')],
         todo: ['✅ 할 일', det ? todoHtml(B) : `<div class="of-big">${n.todos ?? 0}건</div>` + lock('할 일')],
         appr: ['🔔 승인할 일', det ? ((B.recentPosts || []).length ? `<div class="of-lock" style="margin:0 0 8px;color:#2b2a26"><b>📣 최근 게시</b>${B.recentPosts.map(p => `<div style="margin-top:4px">${esc(p.kind)}: <b>${esc(p.title)}</b> · ${esc(p.at)} · ${esc(p.channel)} · ${p.days === 0 ? '오늘' : p.days + '일 전'}${p.summary ? '<br><span class="of-sub">' + esc(p.summary) + '</span>' : ''}</div>`).join('')}</div>` : '') + (B.approvals || []).map(a => `<div class="of-li"><span class="of-ic">${dicon(o, a.dept)}</span><div class="of-t"><b style="white-space:normal">${esc(a.title)}</b><span class="of-quick">${(() => { if (a.publish) { const nm2 = a.title.replace(/ 칼럼 블로그 발행 대기$/, ''); return `<button data-quick="${esc(nm2 + ' 발행했어')}">발행했어</button>`; } const base = a.title.replace(/ (칼럼 )?승인 대기$/, '').replace(/ 대기$/, ''); const nm = base.replace(/ 게시$/, ''); return `<button data-quick="${esc(base + ' 승인')}">승인</button><button data-quick="${esc(nm + ' 보류')}">보류</button><button data-quick="${esc(nm + ' 수정: ')}">수정 요청</button>`; })()}</span>${a.summary ? `<span style="display:block">${esc(a.summary)}</span>` : ''}<span>${esc(dname(o, a.dept))}${a.due ? ' · ' + esc(a.due) : ''} · 텔레그램에 "○○ 승인"이라고 보내면 처리돼요</span></div></div>`).join('') || '<div class="of-empty">승인할 일이 없어요.</div>' : `<div class="of-big">${n.approvals ?? 0}건</div>` + lock('승인 항목')],
         rep: ['📋 알아둘 보고', det ? (B.reports || []).map(r => `<div class="of-log"><em>${r.level === 'warn' ? '⚠ ' : ''}${esc(dname(o, r.dept))}</em><span>${esc(r.text)}</span></div>`).join('') || '<div class="of-empty">새 보고가 없어요.</div>' : `<div class="of-big">${n.reports ?? 0}건</div>` + lock('보고')],
         brief: ['☀️ 아침 브리핑', det ? (br ? `<div class="of-sub" style="margin-bottom:6px">${esc(br.date)} 작성 · 매일 08:00 텔레그램으로도 받아요</div><pre class="of-pre">${esc(br.text)}</pre>` : '<div class="of-empty">아직 브리핑이 없어요. 매일 08:00에 만들어져요.</div>') : `<div class="of-sub">${n.briefingAt ? md(n.briefingAt) + ' ' + hm(n.briefingAt) + ' 작성' : '아직 없음'} · 매일 08:00 텔레그램으로 발송</div>` + lock('브리핑 내용')],
       };
       const m = document.createElement('div'); m.className = 'of-modal';
-      const draw = k => { if (det) sec.todo[1] = todoHtml(o.boss); m.innerHTML = `<div class="of-box"><h2>${AV('xl')} 원장실<button>닫기</button></h2><div class="of-sub">원장님이 하실 일·승인할 일·알아둘 보고·아침 브리핑</div><div class="of-tabs">${Object.entries(sec).map(([id, s]) => `<button data-k="${id}" class="${id === k ? 'on' : ''}">${s[0]}${id === 'todo' ? ' ' + (n.todos ?? 0) : id === 'appr' ? ' ' + (n.approvals ?? 0) : ''}</button>`).join('')}</div><div>${sec[k][1]}</div>${(k === 'todo' || k === 'appr') ? askBox(k) : ''}</div>`;
+      const draw = k => { if (det) sec.todo[1] = todoHtml(o.boss); m.innerHTML = `<div class="of-box"><h2>${AV('xl')} 원장실<button>닫기</button></h2><div class="of-sub">원장님이 하실 일·승인할 일·알아둘 보고·아침 브리핑</div><div class="of-tabs">${Object.entries(sec).map(([id, s]) => `<button data-k="${id}" class="${id === k ? 'on' : ''}">${s[0]}${id === 'todo' ? ' ' + (n.todos ?? 0) : id === 'appr' ? ' ' + (n.approvals ?? 0) : id === 'chk' ? ' ' + (n.attention ?? '-') : ''}</button>`).join('')}</div><div>${sec[k][1]}</div>${(k === 'todo' || k === 'appr') ? askBox(k) : ''}</div>`;
         m.querySelector('h2 button').onclick = () => m.remove(); m.querySelectorAll('.of-tabs button').forEach(b => b.onclick = () => draw(b.dataset.k));
           const ta = m.querySelector('.of-ask textarea'); const sb = m.querySelector('.of-ask-send');
           if (ta && sb) { sb.onclick = () => { sendAsk(ta.value, k); ta.value = ''; }; ta.onkeydown = e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sb.click(); }; }
@@ -293,17 +309,17 @@
     };
     const panel = (title, html) => { const m = document.createElement('div'); m.className = 'of-modal'; m.innerHTML = '<div class="of-box"><h2>' + title + '<button>닫기</button></h2><div>' + html + '</div></div>'; m.querySelector('h2 button').onclick = () => m.remove(); m.onclick = e => { if (e.target === m) m.remove(); }; document.body.appendChild(m); };
     const strip = h => h.replace(/^<div class="of-card"><h3>[\s\S]*?<\/h3>/, '').replace(/<\/div>$/, '');
-    const boards = [['🔔 승인·게시 대기', alerts, c.approvals, 'a'], ['⚙️ 진행 중인 일', prog, c.running], ['📁 최근 완성 자료', rec, c.recent7d], ['👥 직원 현황', staff], ['⚡ 오늘 사용량', use], ['📝 작업 기록', log]];
+    const boards = [...(hasChk ? [['🧭 확인 필요', chkCard, c.attention ?? null, 'a']] : []), ['🔔 승인·게시 대기', alerts, c.approvals, 'a'], ['⚙️ 진행 중인 일', prog, c.running], ['📁 최근 완성 자료', rec, c.recent7d], ['👥 직원 현황', staff], ['⚡ 오늘 사용량', use], ['📝 작업 기록', log]];
     // Build only the data shell off-DOM. The existing stage/life/snow nodes stay alive.
     const host = el;
     const keptStage = host.querySelector('.of-stage');
     el = document.createElement('div');
     if (window.__ofFull) {
-      el.innerHTML = '<div class="of of-full"><div class="of-fswrap">' + stage + '</div><div class="of-dock"><button data-boss="1">' + AV() + ' 원장실' + ((c.todos || 0) + (c.approvals || 0) ? ' <em class="a">' + ((c.todos || 0) + (c.approvals || 0)) + '</em>' : '') + '</button>' + boards.map((b, i) => '<button data-bd="' + i + '">' + b[0] + (b[2] != null ? ' <em class="' + (b[3] && b[2] ? 'a' : '') + '">' + b[2] + '</em>' : '') + '</button>').join('') + '</div></div>';
+      el.innerHTML = '<div class="of of-full"><div class="of-fswrap">' + stage + '</div><div class="of-dock"><button data-boss="1">' + AV() + ' 원장실' + (bossN() ? ' <em class="a">' + bossN() + '</em>' : '') + '</button>' + boards.map((b, i) => '<button data-bd="' + i + '">' + b[0] + (b[2] != null ? ' <em class="' + (b[3] && b[2] ? 'a' : '') + '">' + b[2] + '</em>' : '') + '</button>').join('') + '</div></div>';
       el.querySelectorAll('[data-bd]').forEach(b => b.onclick = () => { const x = boards[+b.dataset.bd]; panel(x[0], strip(x[1])); });
       document.body.style.overflow = 'hidden';
     } else {
-      el.innerHTML = `<div class="of"><div class="of-col">${stage}${log}</div><div class="of-col">${alerts}${prog}${rec}</div><div class="of-col">${staff}${use}</div></div>`;
+      el.innerHTML = `<div class="of"><div class="of-col">${stage}${log}</div><div class="of-col">${chkCard}${alerts}${prog}${rec}</div><div class="of-col">${staff}${use}</div></div>`;
       document.body.style.overflow = '';
     }
     const nextStage = el.querySelector('.of-stage');
